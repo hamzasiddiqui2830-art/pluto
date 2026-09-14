@@ -379,8 +379,8 @@ pub var main_tss_entry: Tss = init: {
 ///
 fn makeGdtEntry(base: u32, limit: u20, access: AccessBits, flags: FlagBits) GdtEntry {
     return .{
-        .limit_low = @truncate(u16, limit),
-        .base_low = @truncate(u24, base),
+        .limit_low = @truncate(limit),
+        .base_low = @truncate(base),
         .access = .{
             .accessed = access.accessed,
             .read_write = access.read_write,
@@ -390,14 +390,14 @@ fn makeGdtEntry(base: u32, limit: u20, access: AccessBits, flags: FlagBits) GdtE
             .privilege = access.privilege,
             .present = access.present,
         },
-        .limit_high = @truncate(u4, limit >> 16),
+        .limit_high = @truncate(limit >> 16),
         .flags = .{
             .reserved_zero = flags.reserved_zero,
             .is_64_bit = flags.is_64_bit,
             .is_32_bit = flags.is_32_bit,
             .granularity = flags.granularity,
         },
-        .base_high = @truncate(u8, base >> 24),
+        .base_high = @truncate(base >> 24),
     };
 }
 
@@ -541,12 +541,12 @@ test "init" {
     const tss_addr = @intFromPtr(&main_tss_entry);
 
     var expected: u64 = 0;
-    expected |= @as(u64, @truncate(u16, tss_limit));
-    expected |= @as(u64, @truncate(u24, tss_addr)) << 16;
+    expected |= @as(u64, @truncate(tss_limit));
+    expected |= @as(u64, @truncate(tss_addr)) << 16;
     expected |= @as(u64, 0x89) << (16 + 24);
-    expected |= @as(u64, @truncate(u4, tss_limit >> 16)) << (16 + 24 + 8);
+    expected |= @as(u64, @truncate(tss_limit >> 16)) << (16 + 24 + 8);
     // Flags are zero
-    expected |= @as(u64, @truncate(u8, tss_addr >> 24)) << (16 + 24 + 8 + 4 + 4);
+    expected |= @as(u64, @truncate(tss_addr >> 24)) << (16 + 24 + 8 + 4 + 4);
 
     try expectEqual(expected, @bitCast(u64, tss_entry));
 

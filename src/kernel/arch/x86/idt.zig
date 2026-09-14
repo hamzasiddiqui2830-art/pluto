@@ -128,7 +128,7 @@ var idt_entries: [NUMBER_OF_ENTRIES]IdtEntry = [_]IdtEntry{IdtEntry{
 ///
 fn makeEntry(base: u32, selector: u16, gate_type: u4, privilege: u2) IdtEntry {
     return IdtEntry{
-        .base_low = @truncate(u16, base),
+        .base_low = @truncate(base),
         .selector = selector,
         .zero = 0,
         .gate_type = gate_type,
@@ -136,7 +136,7 @@ fn makeEntry(base: u32, selector: u16, gate_type: u4, privilege: u2) IdtEntry {
         .privilege = privilege,
         // Creating a new entry, so is now present.
         .present = 1,
-        .base_high = @truncate(u16, base >> 16),
+        .base_high = @truncate(base >> 16),
     };
 }
 
@@ -249,14 +249,14 @@ test "openInterruptGate" {
     const test_fn_0_addr = @intFromPtr(testHandler0);
 
     const expected_entry0 = IdtEntry{
-        .base_low = @truncate(u16, test_fn_0_addr),
+        .base_low = @truncate(test_fn_0_addr),
         .selector = gdt.KERNEL_CODE_OFFSET,
         .zero = 0,
         .gate_type = INTERRUPT_GATE,
         .storage_segment = 0,
         .privilege = PRIVILEGE_RING_0,
         .present = 1,
-        .base_high = @truncate(u16, test_fn_0_addr >> 16),
+        .base_high = @truncate(test_fn_0_addr >> 16),
     };
 
     try expectEqual(expected_entry0, idt_entries[index]);
@@ -278,14 +278,14 @@ test "openInterruptGate" {
     try expectError(IdtError.IdtEntryExists, openInterruptGate(index, testHandler1));
 
     const expected_entry1 = IdtEntry{
-        .base_low = @truncate(u16, test_fn_0_addr),
+        .base_low = @truncate(test_fn_0_addr),
         .selector = gdt.KERNEL_CODE_OFFSET,
         .zero = 0,
         .gate_type = INTERRUPT_GATE,
         .storage_segment = 0,
         .privilege = PRIVILEGE_RING_0,
         .present = 1,
-        .base_high = @truncate(u16, test_fn_0_addr >> 16),
+        .base_high = @truncate(test_fn_0_addr >> 16),
     };
 
     try expectEqual(expected_entry1, idt_entries[index]);

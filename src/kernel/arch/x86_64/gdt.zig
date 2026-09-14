@@ -236,8 +236,8 @@ pub var main_tss_entry: Tss align(16) = init: {
 /// Make a GDT entry.
 fn makeGdtEntry(base: u64, limit: u32, access: AccessBits, flags: FlagBits) GdtEntry {
     return .{
-        .limit_low = @truncate(u16, limit),
-        .base_low = @truncate(u24, base & 0xFFFFFF),
+        .limit_low = @truncate(limit),
+        .base_low = @truncate(base & 0xFFFFFF),
         .access = .{
             .accessed = access.accessed,
             .read_write = access.read_write,
@@ -247,21 +247,21 @@ fn makeGdtEntry(base: u64, limit: u32, access: AccessBits, flags: FlagBits) GdtE
             .privilege = access.privilege,
             .present = access.present,
         },
-        .limit_high = @truncate(u4, limit >> 16),
+        .limit_high = @truncate(limit >> 16),
         .flags = .{
             .reserved_zero = flags.reserved_zero,
             .is_64_bit = flags.is_64_bit,
             .is_32_bit = flags.is_32_bit,
             .granularity = flags.granularity,
         },
-        .base_high = @truncate(u8, base >> 24),
+        .base_high = @truncate(base >> 24),
     };
 }
 
 /// Initialize the GDT.
 pub fn init() void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Initialize TSS descriptor
     const tss_base: u64 = @intFromPtr(&main_tss_entry);

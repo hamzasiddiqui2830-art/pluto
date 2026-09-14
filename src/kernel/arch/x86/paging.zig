@@ -121,7 +121,7 @@ pub const PAGE_SIZE_4MB: usize = 0x400000;
 pub const PAGE_SIZE_4KB: usize = PAGE_SIZE_4MB / 1024;
 
 /// The kernel's page directory. Should only be used to map kernel-owned code and data
-pub var kernel_directory: Directory align(@truncate(u29, PAGE_SIZE_4KB)) = Directory{ .entries = [_]DirectoryEntry{0} ** ENTRIES_PER_DIRECTORY, .tables = [_]?*Table{null} ** ENTRIES_PER_DIRECTORY };
+pub var kernel_directory: Directory align(@truncate(PAGE_SIZE_4KB)) = Directory{ .entries = [_]DirectoryEntry{0} ** ENTRIES_PER_DIRECTORY, .tables = [_]?*Table{null} ** ENTRIES_PER_DIRECTORY };
 
 ///
 /// Convert a virtual address to an index within an array of directory entries.
@@ -219,7 +219,7 @@ fn mapDirEntry(dir: *Directory, virt_start: usize, virt_end: usize, phys_start: 
         table = tbl;
     } else {
         // Create a table and put the physical address in the dir entry
-        table = &(try allocator.alignedAlloc(Table, @truncate(u29, PAGE_SIZE_4KB), 1))[0];
+        table = &(try allocator.alignedAlloc(Table, @truncate(PAGE_SIZE_4KB), 1))[0];
         @memset(@ptrCast([*]u8, table), 0, @sizeOf(Table));
         const table_phys_addr = if (builtin.is_test) @intFromPtr(table) else vmm.kernel_vmm.virtToPhys(@intFromPtr(table)) catch |e| {
             panic(@errorReturnTrace(), "Failed getting the physical address for a page table: {}\n", .{e});
@@ -677,8 +677,8 @@ fn rt_accessUnmappedMem(v_end: u32) void {
     log.err("FAILURE: Value: {}\n", .{value});
     // This is the label that we return to after processing the page fault
     asm volatile (
-        \\.global rt_fault_callback
-        \\rt_fault_callback:
+        \.global rt_fault_callback
+        \rt_fault_callback:
     );
     if (!faulted) {
         panic(@errorReturnTrace(), "FAILURE: Paging should have faulted\n", .{});
@@ -694,8 +694,8 @@ fn rt_accessMappedMem(v_end: u32) void {
     // Print the value to avoid the load from being optimised away
     log.info("Read value in mapped memory: {}\n", .{ptr.*});
     asm volatile (
-        \\.global rt_fault_callback2
-        \\rt_fault_callback2:
+        \.global rt_fault_callback2
+        \rt_fault_callback2:
     );
     if (faulted) {
         panic(@errorReturnTrace(), "FAILURE: Paging shouldn't have faulted\n", .{});

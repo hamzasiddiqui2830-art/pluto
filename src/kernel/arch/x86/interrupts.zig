@@ -27,47 +27,47 @@ export fn handler(ctx: *arch.CpuState) usize {
 ///
 export fn commonStub() linksection(".text") void {
     asm volatile (
-        \\pusha
-        \\push  %%ds
-        \\push  %%es
-        \\push  %%fs
-        \\push  %%gs
-        \\mov %%cr3, %%eax
-        \\push %%eax
-        \\mov   $0x10, %%ax
-        \\mov   %%ax, %%ds
-        \\mov   %%ax, %%es
-        \\mov   %%ax, %%fs
-        \\mov   %%ax, %%gs
-        \\mov   %%esp, %%eax
-        \\push  %%eax
-        \\call  handler
-        \\mov   %%eax, %%esp
+        \pusha
+        \push  %%ds
+        \push  %%es
+        \push  %%fs
+        \push  %%gs
+        \mov %%cr3, %%eax
+        \push %%eax
+        \mov   $0x10, %%ax
+        \mov   %%ax, %%ds
+        \mov   %%ax, %%es
+        \mov   %%ax, %%fs
+        \mov   %%ax, %%gs
+        \mov   %%esp, %%eax
+        \push  %%eax
+        \call  handler
+        \mov   %%eax, %%esp
     );
 
     // Pop off the new cr3 then check if it's the same as the previous cr3
     // If so don't change cr3 to avoid a TLB flush
     asm volatile (
-        \\pop   %%eax
-        \\mov   %%cr3, %%ebx
-        \\cmp   %%eax, %%ebx
-        \\je    same_cr3
-        \\mov   %%eax, %%cr3
-        \\same_cr3:
-        \\pop   %%gs
-        \\pop   %%fs
-        \\pop   %%es
-        \\pop   %%ds
-        \\popa
+        \pop   %%eax
+        \mov   %%cr3, %%ebx
+        \cmp   %%eax, %%ebx
+        \je    same_cr3
+        \mov   %%eax, %%cr3
+        \same_cr3:
+        \pop   %%gs
+        \pop   %%fs
+        \pop   %%es
+        \pop   %%ds
+        \popa
     );
     // The Tss.esp0 value is the stack pointer used when an interrupt occurs. This should be the current process' stack pointer
     // So skip the rest of the CpuState, set Tss.esp0 then un-skip the last few fields of the CpuState
     asm volatile (
-        \\add   $0x1C, %%esp
-        \\.extern main_tss_entry
-        \\mov   %%esp, (main_tss_entry + 4)
-        \\sub   $0x14, %%esp
-        \\iret
+        \add   $0x1C, %%esp
+        \.extern main_tss_entry
+        \mov   %%esp, (main_tss_entry + 4)
+        \sub   $0x14, %%esp
+        \iret
     );
 }
 
@@ -85,19 +85,19 @@ pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
     return struct {
         fn func() linksection(".text") void {
             asm volatile (
-                \\ cli
+                \ cli
             );
 
             // These interrupts don't push an error code onto the stack, so will push a zero.
             if (interrupt_num != 8 and !(interrupt_num >= 10 and interrupt_num <= 14) and interrupt_num != 17) {
                 asm volatile (
-                    \\ pushl $0
+                    \ pushl $0
                 );
             }
 
             asm volatile (
-                \\ pushl %[nr]
-                \\ jmp commonStub
+                \ pushl %[nr]
+                \ jmp commonStub
                 :
                 : [nr] "n" (interrupt_num),
             );

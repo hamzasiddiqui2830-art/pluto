@@ -65,7 +65,7 @@ fn parseScanCode(scan_code: u8) ?KeyAction {
         }
     }
     // Cut off the top bit, which denotes that the key was released
-    const key_code = @truncate(u7, scan_code);
+    const key_code = @truncate(scan_code);
     var key_pos: ?KeyPosition = null;
     if (special_sequence or on_print_screen) {
         if (!released) {

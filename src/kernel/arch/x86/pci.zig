@@ -138,7 +138,7 @@ const PciDevice = struct {
             u32 => 0,
             else => @compileError("Invalid read size. Only u8, u16 and u32 allowed."),
         };
-        return @truncate(pci_reg.getWidth(), (result >> shift));
+        return @truncate((result >> shift));
     }
 
     test "configReadData u8" {

@@ -324,8 +324,8 @@ fn stubClear() void {}
 
 /// Initialize memory.
 pub fn initMem(mb_info: BootPayload) Allocator.Error!MemProfile {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
 
     const allocator = mem.fixed_buffer_allocator.allocator();
     var reserved_physical_mem = std.ArrayList(mem.Range).init(allocator);
@@ -446,7 +446,7 @@ pub fn runtimeTestChecksMem(the_vmm: *const vmm.VirtualMemoryManager(VmmPayload)
         addr += vmm.BLOCK_SIZE;
     }
     const should_fault = @ptrFromInt(*usize, addr).*;
-    log.debug("This should not be printed: {x}\\n", .{should_fault});
+    log.debug("This should not be printed: {x}\n", .{should_fault});
 }
 
 test "x86_64 arch" {

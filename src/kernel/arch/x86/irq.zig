@@ -51,7 +51,7 @@ export fn irqHandler(ctx: *arch.CpuState) usize {
     const irq_offset = ctx.int_num - IRQ_OFFSET;
     if (isValidIrq(irq_offset)) {
         // IRQ index is valid so can truncate
-        const irq_num = @truncate(u8, irq_offset);
+        const irq_num = @truncate(irq_offset);
         if (irq_handlers[irq_num]) |handler| {
             // Make sure it isn't a spurious irq
             if (!pic.spuriousIrq(irq_num)) {

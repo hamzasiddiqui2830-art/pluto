@@ -28,35 +28,35 @@ fn pciWrite(addr: u32, value: u32) void {
 fn getVendorId(bus: u8, slot: u8, func: u8) u16 {
     const addr = makePciAddr(bus, slot, func, 0);
     const value = pciRead(addr);
-    return @truncate(u16, value);
+    return @truncate(value);
 }
 
 /// Get device ID from a PCI device.
 fn getDeviceId(bus: u8, slot: u8, func: u8) u16 {
     const addr = makePciAddr(bus, slot, func, 0);
     const value = pciRead(addr);
-    return @truncate(u16, value >> 16);
+    return @truncate(value >> 16);
 }
 
 /// Get class code from a PCI device.
 fn getClassCode(bus: u8, slot: u8, func: u8) u8 {
     const addr = makePciAddr(bus, slot, func, 8);
     const value = pciRead(addr);
-    return @truncate(u8, value >> 24);
+    return @truncate(value >> 24);
 }
 
 /// Get subclass from a PCI device.
 fn getSubclass(bus: u8, slot: u8, func: u8) u8 {
     const addr = makePciAddr(bus, slot, func, 8);
     const value = pciRead(addr);
-    return @truncate(u8, value >> 16);
+    return @truncate(value >> 16);
 }
 
 /// Get programming interface from a PCI device.
 fn getProgIf(bus: u8, slot: u8, func: u8) u8 {
     const addr = makePciAddr(bus, slot, func, 8);
     const value = pciRead(addr);
-    return @truncate(u8, value >> 8);
+    return @truncate(value >> 8);
 }
 
 /// Get BAR (Base Address Register) from a PCI device.
@@ -81,8 +81,8 @@ pub const PciDeviceInfo = struct {
 
 /// Enumerate all PCI devices.
 pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     var devices = std.ArrayList(PciDeviceInfo).init(allocator);
     errdefer devices.deinit();

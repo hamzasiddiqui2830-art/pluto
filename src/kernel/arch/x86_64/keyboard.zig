@@ -80,7 +80,7 @@ const scancode_to_ascii: [59]u8 = .{
     '\'', // 0x28
     '`', // 0x29
     0,   // 0x2A Shift
-    '\\', // 0x2B
+    '\', // 0x2B
     'z', // 0x2C
     'x', // 0x2D
     'c', // 0x2E
@@ -115,8 +115,8 @@ fn readByte() ?u8 {
 
 /// Initialize the PS/2 keyboard.
 pub fn init(allocator: Allocator) Allocator.Error!*Keyboard {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Disable keyboard temporarily
     arch.out(PS2_COMMAND_PORT, PS2_CMD_DISABLE_FIRST_PORT);

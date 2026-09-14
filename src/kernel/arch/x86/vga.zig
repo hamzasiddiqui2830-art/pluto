@@ -224,8 +224,8 @@ pub fn updateCursor(x: u16, y: u16) void {
     const pos_lower = pos & 0x00FF;
 
     // Set the cursor position
-    sendPortData(REG_CURSOR_LOCATION_LOW, @truncate(u8, pos_lower));
-    sendPortData(REG_CURSOR_LOCATION_HIGH, @truncate(u8, pos_upper));
+    sendPortData(REG_CURSOR_LOCATION_LOW, @truncate(pos_lower));
+    sendPortData(REG_CURSOR_LOCATION_HIGH, @truncate(pos_upper));
 }
 
 ///
@@ -338,8 +338,8 @@ test "updateCursor width out of bounds" {
     const y = 0;
 
     const max_cursor = (HEIGHT - 1) * WIDTH + (WIDTH - 1);
-    const expected_upper = @truncate(u8, (max_cursor >> 8) & 0x00FF);
-    const expected_lower = @truncate(u8, max_cursor & 0x00FF);
+    const expected_upper = @truncate((max_cursor >> 8) & 0x00FF);
+    const expected_lower = @truncate(max_cursor & 0x00FF);
 
     arch.initTest();
     defer arch.freeTest();
@@ -355,8 +355,8 @@ test "updateCursor height out of bounds" {
     const y = HEIGHT;
 
     const max_cursor = (HEIGHT - 1) * WIDTH + (WIDTH - 1);
-    const expected_upper = @truncate(u8, (max_cursor >> 8) & 0x00FF);
-    const expected_lower = @truncate(u8, max_cursor & 0x00FF);
+    const expected_upper = @truncate((max_cursor >> 8) & 0x00FF);
+    const expected_lower = @truncate(max_cursor & 0x00FF);
 
     arch.initTest();
     defer arch.freeTest();
@@ -372,8 +372,8 @@ test "updateCursor width and height out of bounds" {
     const y = HEIGHT;
 
     const max_cursor = (HEIGHT - 1) * WIDTH + (WIDTH - 1);
-    const expected_upper = @truncate(u8, (max_cursor >> 8) & 0x00FF);
-    const expected_lower = @truncate(u8, max_cursor & 0x00FF);
+    const expected_upper = @truncate((max_cursor >> 8) & 0x00FF);
+    const expected_lower = @truncate(max_cursor & 0x00FF);
 
     arch.initTest();
     defer arch.freeTest();
@@ -389,8 +389,8 @@ test "updateCursor width-1 and height out of bounds" {
     const y = HEIGHT;
 
     const max_cursor = (HEIGHT - 1) * WIDTH + (WIDTH - 1);
-    const expected_upper = @truncate(u8, (max_cursor >> 8) & 0x00FF);
-    const expected_lower = @truncate(u8, max_cursor & 0x00FF);
+    const expected_upper = @truncate((max_cursor >> 8) & 0x00FF);
+    const expected_lower = @truncate(max_cursor & 0x00FF);
 
     arch.initTest();
     defer arch.freeTest();
@@ -406,8 +406,8 @@ test "updateCursor width and height-1 out of bounds" {
     const y = HEIGHT - 1;
 
     const max_cursor = (HEIGHT - 1) * WIDTH + (WIDTH - 1);
-    const expected_upper = @truncate(u8, (max_cursor >> 8) & 0x00FF);
-    const expected_lower = @truncate(u8, max_cursor & 0x00FF);
+    const expected_upper = @truncate((max_cursor >> 8) & 0x00FF);
+    const expected_lower = @truncate(max_cursor & 0x00FF);
 
     arch.initTest();
     defer arch.freeTest();
@@ -423,8 +423,8 @@ test "updateCursor in bounds" {
     var y: u8 = 0x0A;
     const expected = y * WIDTH + x;
 
-    var expected_upper = @truncate(u8, (expected >> 8) & 0x00FF);
-    var expected_lower = @truncate(u8, expected & 0x00FF);
+    var expected_upper = @truncate((expected >> 8) & 0x00FF);
+    var expected_lower = @truncate(expected & 0x00FF);
 
     arch.initTest();
     defer arch.freeTest();
@@ -570,16 +570,16 @@ fn rt_setCursorGetCursor() void {
 
     // Save the previous location
     const prev_linear_loc = getCursor();
-    const prev_x_loc = @truncate(u8, prev_linear_loc % WIDTH);
-    const prev_y_loc = @truncate(u8, prev_linear_loc / WIDTH);
+    const prev_x_loc = @truncate(prev_linear_loc % WIDTH);
+    const prev_y_loc = @truncate(prev_linear_loc / WIDTH);
 
     // Set the known location
     updateCursor(x, y);
 
     // Get the cursor
     const actual_linear_loc = getCursor();
-    const actual_x_loc = @truncate(u8, actual_linear_loc % WIDTH);
-    const actual_y_loc = @truncate(u8, actual_linear_loc / WIDTH);
+    const actual_x_loc = @truncate(actual_linear_loc % WIDTH);
+    const actual_y_loc = @truncate(actual_linear_loc / WIDTH);
 
     if (x != actual_x_loc or y != actual_y_loc) {
         panic(@errorReturnTrace(), "FAILURE: VGA cursor not the same: a_x: {}, a_y: {}, e_x: {}, e_y: {}\n", .{ x, y, actual_x_loc, actual_y_loc });

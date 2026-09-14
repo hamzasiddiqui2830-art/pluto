@@ -194,7 +194,7 @@ pub fn Bitmap(comptime num_entries: ?usize, comptime BitmapType: type) type {
             var count: usize = 0;
             var start: ?usize = from;
             var i: usize = if (from) |f| f / ENTRIES_PER_BITMAP else 0;
-            var bit: IndexType = if (from) |f| @truncate(IndexType, f % ENTRIES_PER_BITMAP) else 0;
+            var bit: IndexType = if (from) |f| @truncate(f % ENTRIES_PER_BITMAP) else 0;
             while (i < self.bitmaps.len) : ({
                 i += 1;
                 bit = 0;
@@ -267,7 +267,7 @@ pub fn Bitmap(comptime num_entries: ?usize, comptime BitmapType: type) type {
                 if (bmp.* == BITMAP_FULL) {
                     continue;
                 }
-                const bit = @truncate(IndexType, @ctz(BitmapType, ~bmp.*));
+                const bit = @truncate(@ctz(BitmapType, ~bmp.*));
                 const idx = bit + i * ENTRIES_PER_BITMAP;
                 // Failing here means that the index is outside of the bitmap, so there are no free entries
                 self.setEntry(idx) catch return null;
@@ -385,7 +385,7 @@ test "static isSet" {
     try testing.expect(try bmp.isSet(0));
     var i: usize = 1;
     while (i < bmp.num_entries) : (i += 1) {
-        try testing.expect(!(try bmp.isSet(@truncate(BmpTy.IndexType, i))));
+        try testing.expect(!(try bmp.isSet(@truncate(i))));
     }
 
     bmp.bitmaps[0] = 3;
@@ -393,7 +393,7 @@ test "static isSet" {
     try testing.expect(try bmp.isSet(1));
     i = 2;
     while (i < bmp.num_entries) : (i += 1) {
-        try testing.expect(!(try bmp.isSet(@truncate(BmpTy.IndexType, i))));
+        try testing.expect(!(try bmp.isSet(@truncate(i))));
     }
 
     bmp.bitmaps[0] = 11;
@@ -403,7 +403,7 @@ test "static isSet" {
     try testing.expect(try bmp.isSet(3));
     i = 4;
     while (i < bmp.num_entries) : (i += 1) {
-        try testing.expect(!(try bmp.isSet(@truncate(BmpTy.IndexType, i))));
+        try testing.expect(!(try bmp.isSet(@truncate(i))));
     }
 }
 

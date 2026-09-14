@@ -179,8 +179,8 @@ pub fn readCr3() usize {
 
 /// Initialize paging for x86_64.
 pub fn init(mem_profile: *const MemProfile) void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Clear the kernel PML4
     for (kernel_pml4.entries) |*entry| {

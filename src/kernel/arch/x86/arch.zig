@@ -223,8 +223,8 @@ pub fn lgdt(gdt_ptr: *const gdt.GdtPtr) void {
 
     // Load the kernel code segment into the CS register
     asm volatile (
-        \\ljmp $0x08, $1f
-        \\1:
+        \ljmp $0x08, $1f
+        \1:
     );
 }
 

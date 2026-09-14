@@ -163,8 +163,8 @@ fn updateCursor() void {
 fn getCursor() void {
     const cursor = vga.getCursor();
 
-    row = @truncate(u8, cursor / vga.WIDTH);
-    column = @truncate(u8, cursor % vga.WIDTH);
+    row = @truncate(cursor / vga.WIDTH);
+    column = @truncate(cursor % vga.WIDTH);
 }
 
 ///
@@ -309,7 +309,7 @@ fn putChar(char: u8) TtyError!void {
         '\t' => {
             column += 4;
             if (column >= vga.WIDTH) {
-                column -= @truncate(u8, vga.WIDTH);
+                column -= @truncate(vga.WIDTH);
                 row += 1;
                 scroll();
             }
@@ -537,7 +537,7 @@ pub fn init() void {
         setVideoBuffer(blank, START_OF_DISPLAYABLE_REGION) catch |e| {
             log.err("Error clearing the top 7 rows. Error: {}\n", .{e});
         };
-        row += @truncate(u8, row_offset + ROW_MIN);
+        row += @truncate(row_offset + ROW_MIN);
     } else {
         // Clear the screen
         setVideoBuffer(blank, VIDEO_BUFFER_SIZE) catch |e| {
@@ -897,7 +897,7 @@ test "putEntryAt in displayable region page_index is not 0" {
     const text = "Page 0 of 4";
     const column_temp = column;
     const row_temp = row;
-    column = @truncate(u8, vga.WIDTH) - @truncate(u8, text.len);
+    column = @truncate(vga.WIDTH) - @truncate(text.len);
     row = ROW_MIN - 1;
     writeString(text) catch |e| {
         log.err("Unable to print page number, printing out of bounds. Error: {}\n", .{e});
@@ -1555,7 +1555,7 @@ test "pageUp bottom page" {
     const text = "Page 1 of 4";
     const column_temp = column;
     const row_temp = row;
-    column = @truncate(u8, vga.WIDTH) - @truncate(u8, text.len);
+    column = @truncate(vga.WIDTH) - @truncate(text.len);
     row = ROW_MIN - 1;
     writeString(text) catch |e| {
         log.err("Unable to print page number, printing out of bounds. Error: {}\n", .{e});
@@ -1635,7 +1635,7 @@ test "pageDown top page" {
     const text = "Page 3 of 4";
     const column_temp = column;
     const row_temp = row;
-    column = @truncate(u8, vga.WIDTH) - @truncate(u8, text.len);
+    column = @truncate(vga.WIDTH) - @truncate(text.len);
     row = ROW_MIN - 1;
     writeString(text) catch |e| {
         log.err("Unable to print page number, printing out of bounds. Error: {}\n", .{e});

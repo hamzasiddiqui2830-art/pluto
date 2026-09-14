@@ -1,14 +1,25 @@
 ```
+# Zig build artifacts
 zig-cache/
-*.o
-*.obj
-*.exe
-*.bin
-*.img
-*.iso
-.DS_Store
-Thumbs.db
+zig-out/
+
+# Dependencies
+deps/
+
+# Logs and temp files
 *.log
 *.tmp
-*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
 ```

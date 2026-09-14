@@ -26,8 +26,8 @@ fn defaultHandler(_: u64, _: u64, _: u64, _: u64, _: u64, _: u64) callconv(.C) u
 
 /// Initialize syscall subsystem.
 pub fn init() void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Set up syscall/sysret MSRs for fast system calls
     setupSyscallMsrs();
@@ -52,12 +52,7 @@ fn setupSyscallMsrs() void {
 
 /// Write to Model Specific Register.
 fn wrmsr(msr: u32, value: u64) void {
-    const low = @truncate(u32, value);
-    const high = @truncate(u32, value >> 32);
-    asm volatile ("wrmsr"
-        :
-        : "{ecx}" (msr),
-          "{eax}" (low),
+    const low = @truncate("{eax}" (low),
           "{edx}" (high),
         : "memory"
     );
