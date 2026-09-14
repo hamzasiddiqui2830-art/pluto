@@ -27,32 +27,32 @@ export fn handler(ctx: *arch.CpuState) usize {
 ///
 export fn commonStub() linksection(".text") void {
     asm volatile (
-        "pusha\n\t"
-        "push\n\t"
-        "push\n\t"
-        "push\n\t"
-        "push\n\t"
-        "mov\n\t"
-        "push\n\t"
-        "mov\n\t"
-        "mov\n\t"
-        "mov\n\t"
-        "mov\n\t"
-        "mov\n\t"
-        "mov\n\t"
-        "push\n\t"
-        "call\n\t"
-        "mov\n\t"
+        \\ pusha
+        \\ push
+        \\ push
+        \\ push
+        \\ push
+        \\ mov
+        \\ push
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ push
+        \\ call
+        \\ mov
     );
 
     // Pop off the new cr3 then check if it's the same as the previous cr3
     // If so don't change cr3 to avoid a TLB flush
     asm volatile (
-        "pop\n\t"
-        "mov\n\t"
-        "cmp\n\t"
-        "je\n\t"
-        "mov\n\t"
+        \\ pop
+        \\ mov
+        \\ cmp
+        \\ je
+        \\ mov
         \\same_cr3:
         \\pop   %%gs
         \\pop   %%fs
@@ -63,11 +63,11 @@ export fn commonStub() linksection(".text") void {
     // The Tss.esp0 value is the stack pointer used when an interrupt occurs. This should be the current process' stack pointer
     // So skip the rest of the CpuState, set Tss.esp0 then un-skip the last few fields of the CpuState
     asm volatile (
-        "add\n\t"
+        \\ add
         \\.extern main_tss_entry
-        "mov\n\t"
-        "sub\n\t"
-        "iret\n\t"
+        \\ mov
+        \\ sub
+        \\ iret
     );
 }
 
@@ -96,7 +96,7 @@ pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
             }
 
             asm volatile (
-                "pushl\n\t"
+                \\ pushl
                 :
                 : [nr] "n" (interrupt_num)
             );

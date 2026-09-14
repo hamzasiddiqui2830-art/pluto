@@ -71,42 +71,41 @@ export fn _start() align(16) linksection(".text.boot") noreturn {
     // Set the page directory to the boot directory
     asm volatile (
         \\.extern boot_page_directory
-        "mov\n\t"
-        "mov\n\t"
+        \\ movl $boot_page_directory, %%eax
+        \\ movl %%eax, %%cr3
     );
 
     // Enable 4 MiB pages
     asm volatile (
-        "mov\n\t"
-        "or\n\t"
-        "mov\n\t"
+        \\ movl %%cr4, %%eax
+        \\ orl $0x10, %%eax
+        \\ movl %%eax, %%cr4
     );
 
     // Enable paging
     asm volatile (
-        "mov\n\t"
-        "or\n\t"
-        "mov\n\t"
+        \\ movl %%cr0, %%eax
+        \\ orl $0x80000000, %%eax
+        \\ movl %%eax, %%cr0
     );
     asm volatile ("jmp start_higher_half");
-    "while\n\t"
-}
 
-"export\n\t"
     // Invalidate the page for the first 4MiB as it's no longer needed
-    "asm\n\t"
+    asm volatile (
+        \\ cli
+    );
 
     // Setup the stack
-    "asm\n\t"
+    asm volatile (
         \\.extern KERNEL_STACK_END
-        "mov\n\t"
-        "sub\n\t"
-        "mov\n\t"
+        \\ movl $KERNEL_STACK_END, %%eax
+        \\ subl $1, %%eax
+        \\ movl %%eax, %%esp
     );
 
     // Get the multiboot header address and add the virtual offset
     const mb_info_addr = asm (
-        \\mov %%ebx, %[res]
+        \\.mov %%ebx, %[res]
         : [res] "=r" (-> usize),
     ) + @intFromPtr(&KERNEL_ADDR_OFFSET);
     kmain(@ptrFromInt(arch.BootPayload, mb_info_addr));

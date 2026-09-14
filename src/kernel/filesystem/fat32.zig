@@ -1954,7 +1954,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
                 .name = name[0..8].*,
                 .extension = name[8..11].*,
                 .attributes = @enumToInt(attributes),
-                .time_created_tenth = @intCast((date_time.second % 2, u8) * 100),
+                .time_created_tenth = @intCast(@as(u8, date_time.second % 2) * 100),
                 .time_created = time,
                 .date_created = date,
                 .date_last_access = date,
