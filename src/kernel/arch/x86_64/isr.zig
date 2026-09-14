@@ -59,7 +59,7 @@ fn defaultHandler(state: *arch.CpuState) void {
     };
 
     const name = if (state.int_num < exception_names.len) exception_names[state.int_num] else "Unknown";
-    
+
     log.err("\n!!! EXCEPTION: {} (#{}) !!!\n", .{ name, state.int_num });
     log.err("RIP: 0x{X}, RSP: 0x{X}, RFLAGS: 0x{X}\n", .{ state.rip, state.rsp, state.rflags });
     log.err("Error Code: 0x{X}\n", .{state.error_code});
@@ -67,7 +67,7 @@ fn defaultHandler(state: *arch.CpuState) void {
     log.err("RSI: 0x{X}, RDI: 0x{X}, RBP: 0x{X}, R8: 0x{X}\n", .{ state.rsi, state.rdi, state.rbp, state.r8 });
     log.err("R9: 0x{X}, R10: 0x{X}, R11: 0x{X}, R12: 0x{X}\n", .{ state.r9, state.r10, state.r11, state.r12 });
     log.err("R13: 0x{X}, R14: 0x{X}, R15: 0x{X}\n", .{ state.r13, state.r14, state.r15 });
-    
+
     arch.haltNoInterrupts();
 }
 
@@ -75,7 +75,7 @@ fn defaultHandler(state: *arch.CpuState) void {
 pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     // Set default handlers for all exceptions
     for (exception_handlers) |*handler| {
         handler.* = defaultHandler;

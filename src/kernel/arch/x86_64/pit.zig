@@ -19,17 +19,17 @@ fn pitDivisor(frequency: u32) u16 {
 pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     setFrequency(DEFAULT_FREQUENCY);
 }
 
 /// Set the PIT frequency.
 pub fn setFrequency(frequency: u32) void {
     const divisor = pitDivisor(frequency);
-    
+
     // Send command byte: channel 0, lobyte/hibyte, square wave generator, binary
     arch.out(PIT_COMMAND, 0x36);
-    
+
     // Send divisor
     arch.out(PIT_CHANNEL0, @truncate(divisor));
     arch.out(PIT_CHANNEL0, @truncate(divisor >> 8));

@@ -51,17 +51,17 @@ pub fn getDateTime() DateTime {
     var day: u8 = 0;
     var month: u8 = 0;
     var year: u8 = 0;
-    
+
     // Wait for update to finish, then read all values
     while (rtcUpdateInProgress()) {}
-    
+
     sec = cmosRead(RTC_SECOND);
     min = cmosRead(RTC_MINUTE);
     hour = cmosRead(RTC_HOUR);
     day = cmosRead(RTC_DAY);
     month = cmosRead(RTC_MONTH);
     year = cmosRead(RTC_YEAR);
-    
+
     // Check if we got interrupted during reading
     while (rtcUpdateInProgress()) {
         // Re-read if interrupted
@@ -72,11 +72,11 @@ pub fn getDateTime() DateTime {
         month = cmosRead(RTC_MONTH);
         year = cmosRead(RTC_YEAR);
     }
-    
+
     // Check status B for BCD/binary mode
     const status_b = cmosRead(RTC_STATUS_B);
     const use_bcd = (status_b & 0x04) == 0;
-    
+
     // Convert from BCD if necessary
     if (use_bcd) {
         sec = (sec & 0x0F) + ((sec / 16) * 10);
@@ -86,7 +86,7 @@ pub fn getDateTime() DateTime {
         month = (month & 0x0F) + ((month / 16) * 10);
         year = (year & 0x0F) + ((year / 16) * 10);
     }
-    
+
     // Handle 12-hour format
     if ((status_b & 0x02) == 0) {
         // 12-hour format
@@ -101,10 +101,10 @@ pub fn getDateTime() DateTime {
         // 24-hour format, just clear the high bit
         hour = hour & 0x3F;
     }
-    
+
     // Convert year to full year (assume 20xx for now)
     const full_year: u16 = 2000 + year;
-    
+
     return .{
         .year = full_year,
         .month = month,
@@ -119,7 +119,7 @@ pub fn getDateTime() DateTime {
 pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     // Enable binary mode and 24-hour format
     const status_b = cmosRead(RTC_STATUS_B);
     cmosWrite(RTC_STATUS_B, status_b | 0x02 | 0x04);

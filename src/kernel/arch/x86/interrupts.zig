@@ -98,7 +98,7 @@ pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
             asm volatile (
                 \\ pushl
                 :
-                : [nr] "n" (interrupt_num)
+                : [nr] "n" (interrupt_num),
             );
         }
     }.func;

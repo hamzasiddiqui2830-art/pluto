@@ -92,6 +92,6 @@ test "ASCII toWideChar" {
 }
 
 test "Invalid characters" {
-    const char = '\u{20AC}';  // Euro sign in Unicode
+    const char = '\u{20AC}'; // Euro sign in Unicode
     try std.testing.expectError(CodePage.Error.InvalidChar, CodePage.toCodePage(.CP437, char));
 }

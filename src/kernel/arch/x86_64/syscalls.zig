@@ -28,7 +28,7 @@ fn defaultHandler(_: u64, _: u64, _: u64, _: u64, _: u64, _: u64) callconv(.C) u
 pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     // Set up syscall/sysret MSRs for fast system calls
     setupSyscallMsrs();
 }
@@ -38,14 +38,14 @@ fn setupSyscallMsrs() void {
     const STAR_MSR: u32 = 0xC0000081; // SYSCALL Target Address Register
     const LSTAR_MSR: u32 = 0xC0000082; // Long Mode SYSCALL Target Address
     const SFMASK_MSR: u32 = 0xC0000084; // SYSCALL Flag Mask
-    
+
     // Write to STAR MSR (legacy syscall target, not used in long mode)
     wrmsr(STAR_MSR, 0);
-    
+
     // Write the address of our syscall handler to LSTAR
     const handler_addr = @intFromPtr(syscallEntry);
     wrmsr(LSTAR_MSR, handler_addr);
-    
+
     // Set SFMASK to mask interrupts during syscall
     wrmsr(SFMASK_MSR, 0x200); // Mask IF flag
 }
@@ -56,9 +56,9 @@ fn wrmsr(msr: u32, value: u64) void {
     const high = @as(u32, @truncate(value >> 32));
     asm volatile ("wrmsr"
         :
-        : "{ecx}" (msr),
-          "{eax}" (low),
-          "{edx}" (high)
+        : [msr] "{ecx}" (msr),
+          [low] "{eax}" (low),
+          [high] "{edx}" (high),
     );
 }
 
@@ -69,7 +69,7 @@ fn rdmsr(msr: u32) u64 {
     asm volatile ("rdmsr"
         : [low] "={eax}" (low),
           [high] "={edx}" (high),
-        : "{ecx}" (msr),
+        : [msr] "{ecx}" (msr),
     );
     return (@as(u64, high) << 32) | low;
 }
@@ -83,7 +83,7 @@ fn syscallEntry() noreturn {
     // 3. Calls the appropriate handler
     // 4. Returns result in RAX
     // 5. Executes SYSRET
-    
+
     // For now, just halt
     arch.haltNoInterrupts();
 }
