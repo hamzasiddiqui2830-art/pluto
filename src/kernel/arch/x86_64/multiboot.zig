@@ -89,12 +89,12 @@ pub const MemoryMapEntry = extern struct {
     type: u32,
     /// Reserved (must be 0).
     zero: u32,
-    
+
     /// Get full 64-bit base address.
     pub fn baseAddr(self: *const MemoryMapEntry) u64 {
         return (@as(u64, self.base_addr_high) << 32) | self.base_addr_low;
     }
-    
+
     /// Get full 64-bit length.
     pub fn length(self: *const MemoryMapEntry) u64 {
         return (@as(u64, self.length_high) << 32) | self.length_low;
@@ -115,12 +115,12 @@ pub const ModuleTag = extern struct {
     mod_end_high: u32,
     /// Module command line string.
     cmdline: [1]u8,
-    
+
     /// Get full 64-bit start address.
     pub fn modStart(self: *const ModuleTag) u64 {
         return (@as(u64, self.mod_start_high) << 32) | self.mod_start_low;
     }
-    
+
     /// Get full 64-bit end address.
     pub fn modEnd(self: *const ModuleTag) u64 {
         return (@as(u64, self.mod_end_high) << 32) | self.mod_end_low;
@@ -131,21 +131,21 @@ pub const ModuleTag = extern struct {
 pub fn findTag(info: *const Multiboot2Info, comptime T: type, wanted_type: TagType) ?*T {
     var current_tag = @ptrFromInt([*]u8, @intFromPtr(info) + @sizeOf(Multiboot2Info));
     const end_ptr = @ptrFromInt([*]u8, @intFromPtr(info) + info.total_size);
-    
+
     while (current_tag < end_ptr) {
         const tag = @ptrFromInt(*Multiboot2Tag, current_tag);
-        
+
         if (tag.type == 0) break; // End tag
-        
+
         if (tag.type == @intFromEnum(wanted_type)) {
             return @ptrFromInt(*T, current_tag);
         }
-        
+
         // Align to 8 bytes
         const next_offset = (tag.size + 7) & @as(usize, ~@as(usize, 7));
         current_tag += next_offset;
     }
-    
+
     return null;
 }
 

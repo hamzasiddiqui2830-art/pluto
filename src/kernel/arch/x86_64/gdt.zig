@@ -199,25 +199,25 @@ const PAGING_32_BIT: FlagBits = FlagBits{
 /// GDT entries array.
 var gdt_entries: [NUMBER_OF_ENTRIES]GdtEntry = init: {
     var gdt_entries_temp: [NUMBER_OF_ENTRIES]GdtEntry = undefined;
-    
+
     // Null descriptor
     gdt_entries_temp[0] = makeGdtEntry(0, 0, NULL_SEGMENT, NULL_FLAGS);
-    
+
     // Kernel code descriptor (64-bit)
     gdt_entries_temp[1] = makeGdtEntry(0, 0, KERNEL_SEGMENT_CODE, LONG_MODE_CODE);
-    
+
     // Kernel data descriptor
     gdt_entries_temp[2] = makeGdtEntry(0, 0xFFFFF, KERNEL_SEGMENT_DATA, PAGING_32_BIT);
-    
+
     // User code descriptor (64-bit)
     gdt_entries_temp[3] = makeGdtEntry(0, 0, USER_SEGMENT_CODE, LONG_MODE_CODE);
-    
+
     // User data descriptor
     gdt_entries_temp[4] = makeGdtEntry(0, 0xFFFFF, USER_SEGMENT_DATA, PAGING_32_BIT);
-    
+
     // TSS descriptor (will be initialized at runtime)
     gdt_entries_temp[5] = makeGdtEntry(0, 0, NULL_SEGMENT, NULL_FLAGS);
-    
+
     break :init gdt_entries_temp;
 };
 
@@ -262,19 +262,19 @@ fn makeGdtEntry(base: u64, limit: u32, access: AccessBits, flags: FlagBits) GdtE
 pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     // Initialize TSS descriptor
     const tss_base: u64 = @intFromPtr(&main_tss_entry);
     const tss_limit: u32 = @sizeOf(Tss) - 1;
     gdt_entries[TSS_INDEX] = makeGdtEntry(tss_base, tss_limit, TSS_SEGMENT, NULL_FLAGS);
-    
+
     // Set GDT pointer base
     gdt_ptr.base = @intFromPtr(&gdt_entries[0]);
-    
+
     // Load GDT (declared in arch.zig)
     const arch = @import("arch.zig");
     arch.lgdt(&gdt_ptr);
-    
+
     // Load TSS
     arch.ltr(TSS_OFFSET);
 }

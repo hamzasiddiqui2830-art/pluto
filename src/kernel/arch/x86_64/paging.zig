@@ -94,36 +94,36 @@ pub fn map(pml4: *Pml4Table, virt: usize, phys: usize, flags: u64) !void {
     const pdpt_idx = virtToPdptIdx(virt);
     const pd_idx = virtToPdIdx(virt);
     const pt_idx = virtToPtIdx(virt);
-    
+
     // Check if PML4 entry exists
     if ((pml4.entries[pml4_idx] & ENTRY_PRESENT) == 0) {
         // Need to allocate PDPT - for now just return error
         // In real implementation, would allocate from physical memory manager
         return error.NoMemory;
     }
-    
+
     const pdpt_addr = pml4.entries[pml4_idx] & ENTRY_ADDR_MASK;
     const pdpt = @ptrFromInt(*PdptTable, pdpt_addr);
-    
+
     // Check if PDPT entry exists
     if ((pdpt.entries[pdpt_idx] & ENTRY_PRESENT) == 0) {
         return error.NoMemory;
     }
-    
+
     const pd_addr = pdpt.entries[pdpt_idx] & ENTRY_ADDR_MASK;
     const pd = @ptrFromInt(*PdTable, pd_addr);
-    
+
     // Check if PD entry exists
     if ((pd.entries[pd_idx] & ENTRY_PRESENT) == 0) {
         return error.NoMemory;
     }
-    
+
     const pt_addr = pd.entries[pd_idx] & ENTRY_ADDR_MASK;
     const pt = @ptrFromInt(*PtTable, pt_addr);
-    
+
     // Set up the page table entry
     pt.entries[pt_idx] = (phys & ENTRY_ADDR_MASK) | flags | ENTRY_PRESENT;
-    
+
     // Flush TLB for this address
     flushTlb(virt);
 }
@@ -134,46 +134,56 @@ pub fn unmap(pml4: *Pml4Table, virt: usize) !void {
     const pdpt_idx = virtToPdptIdx(virt);
     const pd_idx = virtToPdIdx(virt);
     const pt_idx = virtToPtIdx(virt);
-    
+
     if ((pml4.entries[pml4_idx] & ENTRY_PRESENT) == 0) {
         return error.NotMapped;
     }
-    
+
     const pdpt_addr = pml4.entries[pml4_idx] & ENTRY_ADDR_MASK;
     const pdpt = @ptrFromInt(*PdptTable, pdpt_addr);
-    
+
     if ((pdpt.entries[pdpt_idx] & ENTRY_PRESENT) == 0) {
         return error.NotMapped;
     }
-    
+
     const pd_addr = pdpt.entries[pdpt_idx] & ENTRY_ADDR_MASK;
     const pd = @ptrFromInt(*PdTable, pd_addr);
-    
+
     if ((pd.entries[pd_idx] & ENTRY_PRESENT) == 0) {
         return error.NotMapped;
     }
-    
+
     const pt_addr = pd.entries[pd_idx] & ENTRY_ADDR_MASK;
     const pt = @ptrFromInt(*PtTable, pt_addr);
-    
+
     pt.entries[pt_idx] = 0;
     flushTlb(virt);
 }
 
 /// Flush TLB for a specific address.
 fn flushTlb(virt: usize) void {
-    asm volatile ("invlpg [%[addr]]" :: [addr] "r" (virt) : "memory");
+    asm volatile ("invlpg [%[addr]]"
+        :
+        : [addr] "r" (virt),
+        : "memory"
+    );
 }
 
 /// Load CR3 with the physical address of the PML4 table.
 pub fn loadCr3(pml4_phys: usize) void {
-    asm volatile ("mov cr3, %[val]" :: [val] "r" (pml4_phys) : "memory");
+    asm volatile ("mov cr3, %[val]"
+        :
+        : [val] "r" (pml4_phys),
+        : "memory"
+    );
 }
 
 /// Read CR3 register.
 pub fn readCr3() usize {
     var val: usize = undefined;
-    asm volatile ("mov %[val], cr3" : [val] "=r" (val));
+    asm volatile ("mov %[val], cr3"
+        : [val] "=r" (val),
+    );
     return val;
 }
 
@@ -181,15 +191,15 @@ pub fn readCr3() usize {
 pub fn init(mem_profile: *const MemProfile) void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     // Clear the kernel PML4
     for (kernel_pml4.entries) |*entry| {
         entry.* = 0;
     }
-    
+
     // Identity map the first 2MB for bootloader compatibility
     // This is a simplified setup - full implementation would map all physical memory
-    
+
     // Load the kernel PML4
     const pml4_phys = mem.virtToPhys(@intFromPtr(&kernel_pml4));
     loadCr3(pml4_phys);

@@ -83,23 +83,23 @@ pub const PciDeviceInfo = struct {
 pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     var devices = std.ArrayList(PciDeviceInfo).init(allocator);
     errdefer devices.deinit();
-    
+
     // Scan all buses, slots, and functions
     for (0..8) |bus| {
         for (0..32) |slot| {
             for (0..8) |func| {
                 const vendor_id = getVendorId(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)));
-                
+
                 // Skip invalid devices (vendor_id 0xFFFF means no device)
                 if (vendor_id == 0xFFFF) {
                     // If func is 0 and we got an invalid device, there are no more functions
                     if (func == 0) break;
                     continue;
                 }
-                
+
                 const device_info = PciDeviceInfo{
                     .bus = @as(u8, @intCast(bus)),
                     .slot = @as(u8, @intCast(slot)),
@@ -118,12 +118,12 @@ pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
                         getBar(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)), 5),
                     },
                 };
-                
+
                 try devices.append(device_info);
             }
         }
     }
-    
+
     return devices.toOwnedSlice();
 }
 

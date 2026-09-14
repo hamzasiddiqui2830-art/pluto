@@ -37,8 +37,8 @@ var caps_lock: bool = false;
 
 /// Scancode to ASCII mapping (US QWERTY).
 const scancode_to_ascii: [59]u8 = .{
-    0,   // 0x00
-    27,  // 0x01 Escape
+    0, // 0x00
+    27, // 0x01 Escape
     '1', // 0x02
     '2', // 0x03
     '3', // 0x04
@@ -51,8 +51,8 @@ const scancode_to_ascii: [59]u8 = .{
     '0', // 0x0B
     '-', // 0x0C
     '=', // 0x0D
-    8,   // 0x0E Backspace
-    9,   // 0x0F Tab
+    8, // 0x0E Backspace
+    9, // 0x0F Tab
     'q', // 0x10
     'w', // 0x11
     'e', // 0x12
@@ -65,8 +65,8 @@ const scancode_to_ascii: [59]u8 = .{
     'p', // 0x19
     '[', // 0x1A
     ']', // 0x1B
-    13,  // 0x1C Enter
-    0,   // 0x1D Ctrl
+    13, // 0x1C Enter
+    0, // 0x1D Ctrl
     'a', // 0x1E
     's', // 0x1F
     'd', // 0x20
@@ -79,7 +79,7 @@ const scancode_to_ascii: [59]u8 = .{
     ';', // 0x27
     '\'', // 0x28
     '`', // 0x29
-    0,   // 0x2A Shift
+    0, // 0x2A Shift
     '\\', // 0x2B
     'z', // 0x2C
     'x', // 0x2D
@@ -91,11 +91,11 @@ const scancode_to_ascii: [59]u8 = .{
     ',', // 0x33
     '.', // 0x34
     '/', // 0x35
-    0,   // 0x36 Shift
+    0, // 0x36 Shift
     '*', // 0x37
-    0,   // 0x38 Alt
+    0, // 0x38 Alt
     ' ', // 0x39 Space
-    0,   // 0x3A Caps Lock
+    0, // 0x3A Caps Lock
 };
 
 /// Wait for keyboard controller to be ready.
@@ -117,22 +117,22 @@ fn readByte() ?u8 {
 pub fn init(allocator: Allocator) Allocator.Error!*Keyboard {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
-    
+
     // Disable keyboard temporarily
     arch.out(PS2_COMMAND_PORT, PS2_CMD_DISABLE_FIRST_PORT);
-    
+
     // Clear output buffer
     while (readByte()) |_| {}
-    
+
     // Enable keyboard
     arch.out(PS2_COMMAND_PORT, PS2_CMD_ENABLE_FIRST_PORT);
-    
+
     const keyboard = try allocator.create(Keyboard);
     keyboard.* = .{
         .read = readKey,
         .peek = peekKey,
     };
-    
+
     return keyboard;
 }
 
@@ -141,12 +141,12 @@ fn scancodeToChar(scancode: u8) ?u8 {
     if (scancode >= scancode_to_ascii.len) {
         return null;
     }
-    
+
     var ch = scancode_to_ascii[scancode];
     if (ch == 0) {
         return null;
     }
-    
+
     // Handle modifiers
     if (shift_pressed) {
         if (ch >= 'a' and ch <= 'z') {
@@ -173,7 +173,7 @@ fn scancodeToChar(scancode: u8) ?u8 {
             ch = ')';
         }
     }
-    
+
     return ch;
 }
 
@@ -184,7 +184,7 @@ fn readKey() ?u8 {
             // Check for key release (bit 7 set)
             const is_release = (scancode & 0x80) != 0;
             const key = scancode & 0x7F;
-            
+
             // Handle modifier keys
             switch (key) {
                 SCANCODE_SHIFT_LEFT, SCANCODE_SHIFT_RIGHT => {
@@ -207,12 +207,12 @@ fn readKey() ?u8 {
                 },
                 else => {},
             }
-            
+
             // Only process key presses, not releases
             if (is_release) {
                 continue;
             }
-            
+
             return scancodeToChar(key);
         }
         arch.halt();
