@@ -789,7 +789,7 @@ test "copy" {
     try std.testing.expectEqual(vmm.allocations.count(), mirrored.allocations.count());
     var it = vmm.allocations.iterator();
     while (it.next()) |next| {
-        for (mirrored.allocations.get(next.key_ptr.*).?.physical.items) |block, i| {
+        for (mirrored.allocations.get(next.key_ptr.*).?.physical.items, 0..) |block, i| {
             try std.testing.expectEqual(block, vmm.allocations.get(next.key_ptr.*).?.physical.items[i]);
         }
     }

@@ -71,37 +71,37 @@ export fn _start() align(16) linksection(".text.boot") noreturn {
     // Set the page directory to the boot directory
     asm volatile (
         \\.extern boot_page_directory
-        \\mov $boot_page_directory, %%ecx
-        \\mov %%ecx, %%cr3
+        "mov\n\t"
+        "mov\n\t"
     );
 
     // Enable 4 MiB pages
     asm volatile (
-        \\mov %%cr4, %%ecx
-        \\or $0x00000010, %%ecx
-        \\mov %%ecx, %%cr4
+        "mov\n\t"
+        "or\n\t"
+        "mov\n\t"
     );
 
     // Enable paging
     asm volatile (
-        \\mov %%cr0, %%ecx
-        \\or $0x80000000, %%ecx
-        \\mov %%ecx, %%cr0
+        "mov\n\t"
+        "or\n\t"
+        "mov\n\t"
     );
     asm volatile ("jmp start_higher_half");
-    while (true) {}
+    "while\n\t"
 }
 
-export fn start_higher_half() linksection(".text") noreturn {
+"export\n\t"
     // Invalidate the page for the first 4MiB as it's no longer needed
-    asm volatile ("invlpg (0)");
+    "asm\n\t"
 
     // Setup the stack
-    asm volatile (
+    "asm\n\t"
         \\.extern KERNEL_STACK_END
-        \\mov $KERNEL_STACK_END, %%esp
-        \\sub $32, %%esp
-        \\mov %%esp, %%ebp
+        "mov\n\t"
+        "sub\n\t"
+        "mov\n\t"
     );
 
     // Get the multiboot header address and add the virtual offset

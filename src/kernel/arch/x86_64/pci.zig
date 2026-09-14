@@ -91,7 +91,7 @@ pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
     for (0..8) |bus| {
         for (0..32) |slot| {
             for (0..8) |func| {
-                const vendor_id = getVendorId(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8));
+                const vendor_id = getVendorId(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)));
                 
                 // Skip invalid devices (vendor_id 0xFFFF means no device)
                 if (vendor_id == 0xFFFF) {
@@ -101,21 +101,21 @@ pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
                 }
                 
                 const device_info = PciDeviceInfo{
-                    .bus = @intCast(bus, u8),
-                    .slot = @intCast(slot, u8),
-                    .func = @intCast(func, u8),
+                    .bus = @as(u8, @intCast(bus)),
+                    .slot = @as(u8, @intCast(slot)),
+                    .func = @as(u8, @intCast(func)),
                     .vendor_id = vendor_id,
-                    .device_id = getDeviceId(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8)),
-                    .class_code = getClassCode(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8)),
-                    .subclass = getSubclass(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8)),
-                    .prog_if = getProgIf(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8)),
+                    .device_id = getDeviceId(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func))),
+                    .class_code = getClassCode(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func))),
+                    .subclass = getSubclass(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func))),
+                    .prog_if = getProgIf(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func))),
                     .bars = .{
-                        getBar(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8), 0),
-                        getBar(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8), 1),
-                        getBar(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8), 2),
-                        getBar(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8), 3),
-                        getBar(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8), 4),
-                        getBar(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8), 5),
+                        getBar(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)), 0),
+                        getBar(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)), 1),
+                        getBar(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)), 2),
+                        getBar(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)), 3),
+                        getBar(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)), 4),
+                        getBar(@as(u8, @intCast(bus)), @as(u8, @intCast(slot)), @as(u8, @intCast(func)), 5),
                     },
                 };
                 

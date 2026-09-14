@@ -1947,8 +1947,8 @@ pub fn Fat32FS(comptime StreamType: type) type {
         fn createShortNameEntry(name: [11]u8, attributes: ShortName.Attributes, cluster: u32) ShortName {
             const date_time = arch.getDateTime();
 
-            const date = @intCast(date_time.day | date_time.month << 5 | (date_time.year - 1980, u16) << 9);
-            const time = @intCast(date_time.second / 2 | date_time.minute << 5 | date_time.hour << 11, u16);
+            const date = @intCast(@as(u16, date_time.day | date_time.month << 5 | (date_time.year - 1980) << 9));
+            const time = @intCast(@as(u16, date_time.second / 2 | date_time.minute << 5 | date_time.hour << 11));
 
             return .{
                 .name = name[0..8].*,

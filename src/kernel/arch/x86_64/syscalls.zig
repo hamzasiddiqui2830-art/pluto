@@ -58,7 +58,7 @@ fn wrmsr(msr: u32, value: u64) void {
         :
         : "{ecx}" (msr),
           "{eax}" (low),
-          "{edx}" (high),
+          "{edx}" (high)
     );
 }
 

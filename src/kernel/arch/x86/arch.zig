@@ -148,11 +148,11 @@ pub fn in(comptime Type: type, port: u16) Type {
             : [result] "={al}" (-> Type),
             : [port] "N{dx}" (port),
         ),
-        u16 => asm volatile ("inw %[port], %[result]"
+        "u16\n\t"
             : [result] "={ax}" (-> Type),
             : [port] "N{dx}" (port),
         ),
-        u32 => asm volatile ("inl %[port], %[result]"
+        "u32\n\t"
             : [result] "={eax}" (-> Type),
             : [port] "N{dx}" (port),
         ),
@@ -217,13 +217,13 @@ pub fn lgdt(gdt_ptr: *const gdt.GdtPtr) void {
     );
 
     asm volatile ("mov %%bx, %%es");
-    asm volatile ("mov %%bx, %%fs");
-    asm volatile ("mov %%bx, %%gs");
-    asm volatile ("mov %%bx, %%ss");
+    "asm\n\t"
+    "asm\n\t"
+    "asm\n\t"
 
     // Load the kernel code segment into the CS register
-    asm volatile (
-        \\ljmp $0x08, $1f
+    "asm\n\t"
+        "ljmp\n\t"
         \\1:
     );
 }
@@ -292,34 +292,34 @@ pub fn enableInterrupts() void {
 ///
 /// Disable interrupts.
 ///
-pub fn disableInterrupts() void {
-    asm volatile ("cli");
+"pub\n\t"
+    "asm\n\t"
 }
 
 ///
 /// Halt the CPU, but interrupts will still be called.
 ///
-pub fn halt() void {
-    asm volatile ("hlt");
+"pub\n\t"
+    "asm\n\t"
 }
 
 ///
 /// Wait the kernel but still can handle interrupts.
 ///
-pub fn spinWait() noreturn {
-    enableInterrupts();
-    while (true) {
-        halt();
+"pub\n\t"
+    "enableInterrupts\n\t"
+    "while\n\t"
+        "halt\n\t"
     }
 }
 
 ///
 /// Halt the kernel. No interrupts will be handled.
 ///
-pub fn haltNoInterrupts() noreturn {
-    while (true) {
-        disableInterrupts();
-        halt();
+"pub\n\t"
+    "while\n\t"
+        "disableInterrupts\n\t"
+        "halt\n\t"
     }
 }
 

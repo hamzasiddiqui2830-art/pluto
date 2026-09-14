@@ -4,8 +4,6 @@ zig-cache/
 zig-out/
 *.o
 *.obj
-*.bin
-*.img
 
 # Dependencies
 deps/
@@ -14,18 +12,18 @@ deps/
 *.log
 *.tmp
 
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
+# Editor/IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS
+# System files
 .DS_Store
 Thumbs.db
+
+# Environment
+.env
+.env.local
+*.env.*
 ```

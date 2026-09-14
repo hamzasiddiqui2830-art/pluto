@@ -27,32 +27,32 @@ export fn handler(ctx: *arch.CpuState) usize {
 ///
 export fn commonStub() linksection(".text") void {
     asm volatile (
-        \\pusha
-        \\push  %%ds
-        \\push  %%es
-        \\push  %%fs
-        \\push  %%gs
-        \\mov %%cr3, %%eax
-        \\push %%eax
-        \\mov   $0x10, %%ax
-        \\mov   %%ax, %%ds
-        \\mov   %%ax, %%es
-        \\mov   %%ax, %%fs
-        \\mov   %%ax, %%gs
-        \\mov   %%esp, %%eax
-        \\push  %%eax
-        \\call  handler
-        \\mov   %%eax, %%esp
+        "pusha\n\t"
+        "push\n\t"
+        "push\n\t"
+        "push\n\t"
+        "push\n\t"
+        "mov\n\t"
+        "push\n\t"
+        "mov\n\t"
+        "mov\n\t"
+        "mov\n\t"
+        "mov\n\t"
+        "mov\n\t"
+        "mov\n\t"
+        "push\n\t"
+        "call\n\t"
+        "mov\n\t"
     );
 
     // Pop off the new cr3 then check if it's the same as the previous cr3
     // If so don't change cr3 to avoid a TLB flush
     asm volatile (
-        \\pop   %%eax
-        \\mov   %%cr3, %%ebx
-        \\cmp   %%eax, %%ebx
-        \\je    same_cr3
-        \\mov   %%eax, %%cr3
+        "pop\n\t"
+        "mov\n\t"
+        "cmp\n\t"
+        "je\n\t"
+        "mov\n\t"
         \\same_cr3:
         \\pop   %%gs
         \\pop   %%fs
@@ -63,11 +63,11 @@ export fn commonStub() linksection(".text") void {
     // The Tss.esp0 value is the stack pointer used when an interrupt occurs. This should be the current process' stack pointer
     // So skip the rest of the CpuState, set Tss.esp0 then un-skip the last few fields of the CpuState
     asm volatile (
-        \\add   $0x1C, %%esp
+        "add\n\t"
         \\.extern main_tss_entry
-        \\mov   %%esp, (main_tss_entry + 4)
-        \\sub   $0x14, %%esp
-        \\iret
+        "mov\n\t"
+        "sub\n\t"
+        "iret\n\t"
     );
 }
 
@@ -96,10 +96,9 @@ pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
             }
 
             asm volatile (
-                \pushl %[nr]
-                \jmp commonStub
+                "pushl\n\t"
                 :
-                : [nr] "n" (interrupt_num),
+                : [nr] "n" (interrupt_num)
             );
         }
     }.func;
