@@ -1743,7 +1743,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
             // Get the last dot in the string
             const last_dot_index = std.mem.lastIndexOf(u16, long_name[long_name_start..], &[_]u16{'.'});
 
-            for (long_name[long_name_start..]) |char, i| {
+            for (long_name[long_name_start..], 0..) |char, i| {
                 // Break when we reach the max of the short name or the last dot
                 if (char == '.') {
                     if (last_dot_index) |index| {
@@ -1887,7 +1887,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
         ///
         fn createLongNameEntry(allocator: Allocator, long_name: []const u16, check_sum: u8) Allocator.Error![]LongName {
             // Calculate the number of long entries (round up). LFN are each 13 characters long
-            const num_lfn_entries = @intCast((long_name.len + 12, u8) / 13);
+            const num_lfn_entries = @as(u8, @intCast((long_name.len + 12) / 13));
 
             // Create the long entries
             var lfn_array = try allocator.alloc(LongName, num_lfn_entries);
@@ -1905,13 +1905,13 @@ pub fn Fat32FS(comptime StreamType: type) type {
                     var temp: [13]u16 = [_]u16{0xFFFF} ** 13;
                     const long_name_slice = long_name[(entry_index * 13)..];
                     if (long_name_slice.len < 13) {
-                        for (long_name_slice) |char, i| {
+                        for (long_name_slice, 0..) |char, i| {
                             temp[i] = char;
                         }
                         // NULL terminated
                         temp[long_name_slice.len] = 0x0000;
                     } else {
-                        for (temp) |*char, i| {
+                        for (temp, 0..) |*char, i| {
                             char.* = long_name[(entry_index * 13) + i];
                         }
                     }
@@ -2018,7 +2018,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
             // TODO: Once FatDirEntry can be a packed struct, then can write as bytes and not convert
             var write_buff = try self.allocator.alloc(u8, entries_size_bytes);
             defer self.allocator.free(write_buff);
-            for (entries.long_entry) |long_entry, i| {
+            for (entries.long_entry, 0..) |long_entry, i| {
                 initBytes(LongName, long_entry, write_buff[(32 * i)..]);
             }
             initBytes(ShortName, entries.short_entry, write_buff[write_buff.len - 32 ..]);
@@ -5095,7 +5095,7 @@ test "Fat32FS.createLongNameEntry - max 255 characters" {
         .third = UA ** 2,
     }} ** 20;
 
-    for (expected) |*e, i| {
+    for (expected, 0..) |*e, i| {
         e.order = 20 - @intCast(i, u8);
     }
     expected[0] = LongName{
@@ -5106,7 +5106,7 @@ test "Fat32FS.createLongNameEntry - max 255 characters" {
         .third = [_]u16{ 0xFFFF, 0xFFFF },
     };
 
-    for (expected) |ex, i| {
+    for (expected, 0..) |ex, i| {
         try expectEqual(entries[i], ex);
     }
 }

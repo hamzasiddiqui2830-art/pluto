@@ -88,9 +88,9 @@ pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
     errdefer devices.deinit();
     
     // Scan all buses, slots, and functions
-    for (0..<8) |bus| {
-        for (0..<32) |slot| {
-            for (0..<8) |func| {
+    for (0..8) |bus| {
+        for (0..32) |slot| {
+            for (0..8) |func| {
                 const vendor_id = getVendorId(@intCast(bus, u8), @intCast(slot, u8), @intCast(func, u8));
                 
                 // Skip invalid devices (vendor_id 0xFFFF means no device)

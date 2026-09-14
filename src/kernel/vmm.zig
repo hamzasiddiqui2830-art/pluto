@@ -281,7 +281,7 @@ pub fn VirtualMemoryManager(comptime Payload: type) type {
                 const vaddr = entry.key_ptr.*;
                 const allocation = entry.value_ptr.*;
 
-                for (allocation.physical.items) |block, i| {
+                for (allocation.physical.items, 0..) |block, i| {
                     if (block <= phys and block + BLOCK_SIZE > phys) {
                         const block_addr = vaddr + i * BLOCK_SIZE;
                         const block_offset = phys % BLOCK_SIZE;
@@ -474,7 +474,7 @@ pub fn VirtualMemoryManager(comptime Payload: type) type {
             // Map them into self for some vaddr so they can be accessed from this VMM
             if (self.bmp.setContiguous(blocks.items.len, null)) |entry| {
                 const v_start = entry * BLOCK_SIZE + self.start;
-                for (blocks.items) |block, i| {
+                for (blocks.items, 0..) |block, i| {
                     const v = v_start + i * BLOCK_SIZE;
                     const v_end = v + BLOCK_SIZE;
                     const p = block;
@@ -523,7 +523,7 @@ pub fn VirtualMemoryManager(comptime Payload: type) type {
                 const physical = allocation.physical;
                 defer physical.deinit();
                 const num_physical_allocations = physical.items.len;
-                for (physical.items) |block, i| {
+                for (physical.items, 0..) |block, i| {
                     // Clear the address space entry and free the physical memory
                     try self.bmp.clearEntry(entry + i);
                     pmm.free(block) catch |e| {

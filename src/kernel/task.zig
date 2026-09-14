@@ -128,7 +128,7 @@ pub const Task = struct {
         var i: usize = 0;
         errdefer {
             // Free the previously allocated addresses
-            for (program_elf.section_headers) |header, j| {
+            for (program_elf.section_headers, 0..) |header, j| {
                 if (j >= i)
                     break;
                 if ((header.flags & elf.SECTION_ALLOCATABLE) != 0)
@@ -367,14 +367,14 @@ test "Multiple create" {
     try expectEqual(task1.pid, 0);
     try expectEqual(task2.pid, 1);
     try expectEqual(all_pids.bitmaps[0], 3);
-    for (all_pids.bitmaps) |bmp, i| {
+    for (all_pids.bitmaps, 0..) |bmp, i| {
         if (i > 0) try expectEqual(bmp, 0);
     }
 
     task1.destroy(std.testing.allocator);
 
     try expectEqual(all_pids.bitmaps[0], 2);
-    for (all_pids.bitmaps) |bmp, i| {
+    for (all_pids.bitmaps, 0..) |bmp, i| {
         if (i > 0) try expectEqual(bmp, 0);
     }
 
@@ -382,7 +382,7 @@ test "Multiple create" {
 
     try expectEqual(task3.pid, 0);
     try expectEqual(all_pids.bitmaps[0], 3);
-    for (all_pids.bitmaps) |bmp, i| {
+    for (all_pids.bitmaps, 0..) |bmp, i| {
         if (i > 0) try expectEqual(bmp, 0);
     }
 
@@ -393,7 +393,7 @@ test "Multiple create" {
 
     try expectEqual(user_task.pid, 0);
     try expectEqual(all_pids.bitmaps[0], 1);
-    for (all_pids.bitmaps) |bmp, i| {
+    for (all_pids.bitmaps, 0..) |bmp, i| {
         if (i > 0) try expectEqual(bmp, 0);
     }
 

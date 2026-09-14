@@ -85,19 +85,19 @@ pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
     return struct {
         fn func() linksection(".text") void {
             asm volatile (
-                \ cli
+                \\ cli
             );
 
             // These interrupts don't push an error code onto the stack, so will push a zero.
             if (interrupt_num != 8 and !(interrupt_num >= 10 and interrupt_num <= 14) and interrupt_num != 17) {
                 asm volatile (
-                    \ pushl $0
+                    \\ pushl $0
                 );
             }
 
             asm volatile (
-                \ pushl %[nr]
-                \ jmp commonStub
+                \pushl %[nr]
+                \jmp commonStub
                 :
                 : [nr] "n" (interrupt_num),
             );

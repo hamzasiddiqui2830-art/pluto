@@ -337,7 +337,7 @@ test "parseScanCode" {
         KeyPosition.SPECIAL,
     };
     const simple_special_codes = &[_]u8{ 72, 75, 77, 80, 82, 71, 73, 83, 79, 81, 53, 28, 56, 91 };
-    for (simple_special_keys) |key, i| {
+    for (simple_special_keys, 0..) |key, i| {
         try testing.expectEqual(parseScanCode(128), null);
         try testing.expectEqual(pressed_keys, 0);
         try testing.expectEqual(on_print_screen, false);

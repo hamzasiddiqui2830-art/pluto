@@ -52,12 +52,13 @@ fn setupSyscallMsrs() void {
 
 /// Write to Model Specific Register.
 fn wrmsr(msr: u32, value: u64) void {
-    var low: u32 = undefined;
-    var high: u32 = undefined;
+    const low = @as(u32, @truncate(value));
+    const high = @as(u32, @truncate(value >> 32));
     asm volatile ("wrmsr"
-        : "{eax}" (low),
-          "{edx}" (high),
+        :
         : "{ecx}" (msr),
+          "{eax}" (low),
+          "{edx}" (high),
     );
 }
 

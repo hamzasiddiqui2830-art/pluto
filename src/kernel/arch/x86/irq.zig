@@ -197,7 +197,7 @@ test "registerIrq re-register irq handler" {
     try expectError(IrqError.IrqExists, registerIrq(0, testFunction2));
 
     // Post testing
-    for (irq_handlers) |h, i| {
+    for (irq_handlers, 0..) |h, i| {
         if (i != 0) {
             try expect(null == h);
         } else {
@@ -225,7 +225,7 @@ test "registerIrq register irq handler" {
     try registerIrq(0, testFunction1);
 
     // Post testing
-    for (irq_handlers) |h, i| {
+    for (irq_handlers, 0..) |h, i| {
         if (i != 0) {
             try expect(null == h);
         } else {
@@ -246,7 +246,7 @@ test "registerIrq invalid irq index" {
 ///
 fn rt_unregisteredHandlers() void {
     // Ensure all ISR are not registered yet
-    for (irq_handlers) |h, i| {
+    for (irq_handlers, 0..) |h, i| {
         if (h) |_| {
             panic(@errorReturnTrace(), "FAILURE: Handler found for IRQ: {}-{}\n", .{ i, h });
         }
@@ -262,7 +262,7 @@ fn rt_openedIdtEntries() void {
     const loaded_idt = arch.sidt();
     const idt_entries = @ptrFromInt([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
 
-    for (idt_entries) |entry, i| {
+    for (idt_entries, 0..) |entry, i| {
         if (i >= IRQ_OFFSET and isValidIrq(i - IRQ_OFFSET)) {
             if (!idt.isIdtOpen(entry)) {
                 panic(@errorReturnTrace(), "FAILURE: IDT entry for {} is not open\n", .{i});

@@ -50,7 +50,7 @@ pub const CodePage = struct {
         }
 
         // Find the code point and then return the index
-        for (getTable(code_page)) |code_point, i| {
+        for (getTable(code_page), 0..) |code_point, i| {
             if (code_point == char) {
                 return @intCast(i, u8);
             }

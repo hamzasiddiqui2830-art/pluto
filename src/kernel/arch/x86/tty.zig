@@ -600,7 +600,7 @@ fn setVideoBufferBlankPages() !void {
 
 fn setVideoBufferIncrementingBlankPages() !void {
     try setUpVideoBuffer();
-    for (video_buffer) |*b, i| {
+    for (video_buffer, 0..) |*b, i| {
         b.* = @intCast(i, u16);
     }
 
@@ -616,8 +616,8 @@ fn setPagesBlank() void {
 }
 
 fn setPagesIncrementing() void {
-    for (pages) |*p_i, i| {
-        for (p_i) |*p_j, j| {
+    for (pages, 0..) |*p_i, i| {
+        for (p_i, 0..) |*p_j, j| {
             p_j.* = @intCast(i, u16) * TOTAL_CHAR_ON_PAGE + @intCast(j, u16);
         }
     }
@@ -632,8 +632,8 @@ fn defaultVariablesTesting(p_i: u8, r: u8, c: u8) !void {
 }
 
 fn incrementingPagesTesting() !void {
-    for (pages) |p_i, i| {
-        for (p_i) |p_j, j| {
+    for (pages, 0..) |p_i, i| {
+        for (p_i, 0..) |p_j, j| {
             try expectEqual(i * TOTAL_CHAR_ON_PAGE + j, p_j);
         }
     }
@@ -818,8 +818,8 @@ test "putEntryAt in displayable region page_index is 0" {
 
     // Post test
     try defaultVariablesTesting(0, 0, 0);
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (i == page_index and (j == (y * vga.WIDTH + x) - START_OF_DISPLAYABLE_REGION)) {
                 try expectEqual(vga.orig_entry(char, test_colour), c);
             } else {
@@ -858,7 +858,7 @@ test "putEntryAt in displayable region page_index is not 0" {
 
     // Fill the 1'nd page (index 1) will all 1's
     const ones = vga.orig_entry('1', test_colour);
-    for (pages) |*page, i| {
+    for (pages, 0..) |*page, i| {
         for (page) |*char| {
             if (i == 0) {
                 char.* = ones;
@@ -874,7 +874,7 @@ test "putEntryAt in displayable region page_index is not 0" {
     try defaultVariablesTesting(1, 0, 0);
     try defaultVideoBufferTesting();
 
-    for (pages) |page, i| {
+    for (pages, 0..) |page, i| {
         for (page) |char| {
             if (i == 0) {
                 try expectEqual(ones, char);
@@ -905,8 +905,8 @@ test "putEntryAt in displayable region page_index is not 0" {
     column = column_temp;
     row = row_temp;
 
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (i == 0 and j == 0) {
                 try expectEqual(vga.orig_entry(char, test_colour), c);
             } else if (i == 0) {
@@ -1001,8 +1001,8 @@ test "pagesMoveRowsUp 1 rows" {
     try defaultVideoBufferTesting();
 
     const to_add = rows_to_move * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1040,8 +1040,8 @@ test "pagesMoveRowsUp ROW_TOTAL - 1 rows" {
     try defaultVideoBufferTesting();
 
     const to_add = rows_to_move * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1078,8 +1078,8 @@ test "pagesMoveRowsUp ROW_TOTAL rows" {
     try defaultVariablesTesting(0, 0, 0);
     try defaultVideoBufferTesting();
 
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (i == 0) {
                 // The last rows will be blanks
                 try expectEqual(blank, c);
@@ -1136,8 +1136,8 @@ test "scroll row is equal to height" {
     try defaultVariablesTesting(0, vga.HEIGHT - 1, 0);
 
     const to_add = (row_test - vga.HEIGHT + 1) * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1189,8 +1189,8 @@ test "scroll row is more than height" {
     try defaultVariablesTesting(0, vga.HEIGHT - 1, 0);
 
     const to_add = (row_test - vga.HEIGHT + 1) * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1477,8 +1477,8 @@ test "putChar any char end of screen" {
 
     // Post test
     try defaultVariablesTesting(0, vga.HEIGHT - 1, 0);
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if ((i == 0) and (j == TOTAL_CHAR_ON_PAGE - vga.WIDTH - 1)) {
                 try expectEqual(vga.orig_entry('A', colour), c);
             } else {
@@ -1692,8 +1692,8 @@ test "clearScreen" {
         }
     }
 
-    for (pages) |page, j| {
-        for (page) |c, k| {
+    for (pages, 0..) |page, j| {
+        for (page, 0..) |c, k| {
             if (j == 0) {
                 // The last rows will be blanks
                 try expectEqual(blank, c);
@@ -1895,8 +1895,8 @@ test "writeString" {
 
     // Post test
     try defaultVariablesTesting(0, ROW_MIN, 3);
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if ((i == 0) and (j == 0)) {
                 try expectEqual(vga.orig_entry('A', colour), c);
             } else if ((i == 0) and (j == 1)) {

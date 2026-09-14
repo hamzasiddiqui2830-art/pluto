@@ -1,8 +1,18 @@
 ```
+# Zig build artifacts
+zig-cache/
+zig-out/
+*.o
+*.obj
+*.bin
+*.img
+
+# Dependencies
+deps/
+
 # Logs and temp files
 *.log
 *.tmp
-*.swp
 
 # Environment
 .env
@@ -12,37 +22,10 @@
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Dependencies
-node_modules/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-venv/
-.venv/
-.env
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
-.tox/
-.nox/
-.coverage
-coverage/
-htmlcov/
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
-
-# OS generated files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 ```

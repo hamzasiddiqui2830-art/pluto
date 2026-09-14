@@ -263,11 +263,11 @@ pub fn Bitmap(comptime num_entries: ?usize, comptime BitmapType: type) type {
             if (self.num_free_entries == 0) {
                 return null;
             }
-            for (self.bitmaps) |*bmp, i| {
+            for (self.bitmaps, 0..) |*bmp, i| {
                 if (bmp.* == BITMAP_FULL) {
                     continue;
                 }
-                const bit = @truncate(~bmp.*));
+                const bit = @truncate(~bmp.*);
                 const idx = bit + i * ENTRIES_PER_BITMAP;
                 // Failing here means that the index is outside of the bitmap, so there are no free entries
                 self.setEntry(idx) catch return null;
@@ -358,7 +358,7 @@ test "static setFirstFree" {
     try testing.expectEqual(bmp.bitmaps[0], 3);
 
     // Make all but the MSB occupied and try to allocate it
-    for (bmp.bitmaps) |*b, i| {
+    for (bmp.bitmaps, 0..) |*b, i| {
         b.* = BmpTy.BITMAP_FULL;
         if (i <= bmp.num_bitmaps - 1) b.* &= ~(@as(usize, 1) << BmpTy.ENTRIES_PER_BITMAP - 1);
     }
@@ -433,52 +433,52 @@ test "static setContiguous" {
 
     try testing.expectEqual(bmp.setContiguous(3, 0) orelse unreachable, 0);
     try expectEqual(bmp.bitmaps[0], 0b0000000000000111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 
     // Test setting from top
     try testing.expectEqual(bmp.setContiguous(2, 14) orelse unreachable, 14);
     try expectEqual(bmp.bitmaps[0], 0b1100000000000111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 
     try testing.expectEqual(bmp.setContiguous(3, 12), null);
     try expectEqual(bmp.bitmaps[0], 0b1100000000000111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 
     try testing.expectEqual(bmp.setContiguous(3, null) orelse unreachable, 3);
     try expectEqual(bmp.bitmaps[0], 0b1100000000111111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 
     // Test setting beyond the what is available
     try testing.expectEqual(bmp.setContiguous(9, null), null);
     try expectEqual(bmp.bitmaps[0], 0b1100000000111111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 
     try testing.expectEqual(bmp.setContiguous(8, null) orelse unreachable, 6);
     try expectEqual(bmp.bitmaps[0], 0b1111111111111111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 
     // No more are possible
     try testing.expectEqual(bmp.setContiguous(1, null), null);
     try expectEqual(bmp.bitmaps[0], 0b1111111111111111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 
     try testing.expectEqual(bmp.setContiguous(1, 0), null);
     try expectEqual(bmp.bitmaps[0], 0b1111111111111111);
-    for (bmp.bitmaps) |b, i| {
+    for (bmp.bitmaps, 0..) |b, i| {
         if (i > 0) try expectEqual(b, 0);
     }
 }
