@@ -22,20 +22,20 @@ jobs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        Invoke-WebRequest -Uri "https://ziglang.org/download/0.9.1/zig-windows-x86_64-0.9.1.zip" -OutFile "zig.zip"
+        Invoke-WebRequest -Uri "https://ziglang.org/download/0.16.0/zig-windows-x86_64-0.16.0.zip" -OutFile "zig.zip"
         Expand-Archive -Path zig.zip -DestinationPath .
     
     - name: Check formatting (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: zig-windows-x86_64-0.9.1/zig.exe fmt --check src
+      run: zig-windows-x86_64-0.16.0/zig.exe fmt --check src
     
     - name: Build kernel (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: zig-windows-x86_64-0.9.1/zig.exe build ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
+      run: zig-windows-x86_64-0.16.0/zig.exe build ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
     
     - name: Run unit tests (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
-      run: zig-windows-x86_64-0.9.1/zig.exe build test ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
+      run: zig-windows-x86_64-0.16.0/zig.exe build test ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
