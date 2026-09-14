@@ -1,4 +1,5 @@
 ```
-# Zig build artifacts
-.zig-cache/
+# Dependency directories
+zig-linux-x86_64-0.13.0/
+
 ```
