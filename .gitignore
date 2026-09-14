@@ -1,8 +1,48 @@
-# CI/CD
-.github/workflows/main.yml
+```
+# Logs and temp files
+*.log
+*.tmp
+*.swp
 
-Wait, I need to reconsider this. The file `.github/workflows/main.yml` is a configuration file that should typically be tracked in version control, not ignored. GitHub Actions workflow files are essential for CI/CD pipelines and are meant to be committed to the repository.
+# Environment
+.env
+.env.local
+*.env.*
 
-Since only a GitHub workflow configuration file was modified and this is not a build artifact, temporary file, or dependency, it should not be added to .gitignore.
+# Editors
+.vscode/
+.idea/
 
-(empty)
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+.env
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.tox/
+.nox/
+.coverage
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+```
