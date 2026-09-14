@@ -39,7 +39,7 @@ pub const IdtPtr = packed struct {
 };
 
 /// Interrupt handler function type.
-pub const InterruptHandler = fn () callconv(.Naked) void;
+pub const InterruptHandler = fn () linksection(".text") void;
 
 /// IDT error types.
 pub const IdtError = error{
@@ -111,7 +111,7 @@ pub fn openInterruptGate(index: u8, handler: InterruptHandler) IdtError!void {
         return IdtError.IdtEntryExists;
     }
     
-    idt_entries[index] = makeEntry(@ptrToInt(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0, 0);
+    idt_entries[index] = makeEntry(@intFromPtr(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0, 0);
 }
 
 /// Initialize the IDT.
@@ -119,7 +119,7 @@ pub fn init() void {
     log.info("Init\\n", .{});
     defer log.info("Done\\n", .{});
     
-    idt_ptr.base = @ptrToInt(&idt_entries);
+    idt_ptr.base = @intFromPtr(&idt_entries);
     arch.lidt(&idt_ptr);
 }
 

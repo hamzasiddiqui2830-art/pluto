@@ -129,16 +129,16 @@ pub const ModuleTag = extern struct {
 
 /// Iterate over multiboot2 tags.
 pub fn findTag(info: *const Multiboot2Info, comptime T: type, wanted_type: TagType) ?*T {
-    var current_tag = @intToPtr([*]u8, @ptrToInt(info) + @sizeOf(Multiboot2Info));
-    const end_ptr = @intToPtr([*]u8, @ptrToInt(info) + info.total_size);
+    var current_tag = @ptrFromInt([*]u8, @intFromPtr(info) + @sizeOf(Multiboot2Info));
+    const end_ptr = @ptrFromInt([*]u8, @intFromPtr(info) + info.total_size);
     
     while (current_tag < end_ptr) {
-        const tag = @intToPtr(*Multiboot2Tag, current_tag);
+        const tag = @ptrFromInt(*Multiboot2Tag, current_tag);
         
         if (tag.type == 0) break; // End tag
         
         if (tag.type == @intFromEnum(wanted_type)) {
-            return @intToPtr(*T, current_tag);
+            return @ptrFromInt(*T, current_tag);
         }
         
         // Align to 8 bytes

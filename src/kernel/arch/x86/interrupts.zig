@@ -25,7 +25,7 @@ export fn handler(ctx: *arch.CpuState) usize {
 ///
 /// The common assembly that all exceptions and interrupts will call.
 ///
-export fn commonStub() callconv(.Naked) void {
+export fn commonStub() linksection(".text") void {
     asm volatile (
         \\pusha
         \\push  %%ds
@@ -83,7 +83,7 @@ export fn commonStub() callconv(.Naked) void {
 ///
 pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
     return struct {
-        fn func() callconv(.Naked) void {
+        fn func() linksection(".text") void {
             asm volatile (
                 \\ cli
             );

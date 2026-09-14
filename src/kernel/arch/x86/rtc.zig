@@ -160,7 +160,7 @@ fn rtcHandler(ctx: *arch.CpuState) usize {
     if (schedule) {
         ret_esp = scheduler.pickNextTask(ctx);
     } else {
-        ret_esp = @ptrToInt(ctx);
+        ret_esp = @intFromPtr(ctx);
     }
 
     // Need to read status register C

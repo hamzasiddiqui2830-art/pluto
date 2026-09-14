@@ -6,8 +6,8 @@ const RuntimeStep = rt.RuntimeStep;
 const Allocator = std.mem.Allocator;
 const Builder = std.build.Builder;
 const Step = std.build.Step;
+const CompileStep = std.build.CompileStep;
 const Target = std.Target;
-const CrossTarget = std.zig.CrossTarget;
 const fs = std.fs;
 const File = fs.File;
 const Mode = std.builtin.Mode;
@@ -15,22 +15,22 @@ const TestMode = rt.TestMode;
 const ArrayList = std.ArrayList;
 const Fat32 = @import("mkfat32.zig").Fat32;
 
-const x86_i686 = CrossTarget{
-    .cpu_arch = .i386,
+const x86_i686: std.Target.Query = .{
+    .cpu_arch = .x86,
     .os_tag = .freestanding,
-    .cpu_model = .{ .explicit = &Target.x86.cpu._i686 },
+    .cpu_model = .{ .explicit = &Target.x86.cpu.i686 },
 };
 
-const x86_64 = CrossTarget{
+const x86_64: std.Target.Query = .{
     .cpu_arch = .x86_64,
     .os_tag = .freestanding,
     .cpu_model = .{ .explicit = &Target.x86.cpu.x86_64 },
 };
 
 pub fn build(b: *Builder) !void {
-    const target = b.standardTargetOptions(.{ .whitelist = &[_]CrossTarget{ x86_i686, x86_64 }, .default_target = x86_i686 });
-    const arch = switch (target.getCpuArch()) {
-        .i386 => "x86",
+    const target = b.standardTargetOptions(.{ .whitelist = &[_]std.Target.Query{ x86_i686, x86_64 }, .default_target = x86_i686 });
+    const arch = switch (target.cpu_arch) {
+        .x86 => "x86",
         .x86_64 => "x86_64",
         else => unreachable,
     };
@@ -67,16 +67,15 @@ pub fn build(b: *Builder) !void {
 
     const exec = b.addExecutable("pluto.elf", main_src);
     const exec_output_path = try fs.path.join(b.allocator, &[_][]const u8{ b.install_path, "pluto.elf" });
-    exec.setOutputDir(b.install_path);
+    exec.setTarget(target);
+    exec.setBuildMode(build_mode);
+    exec.setLinkerScriptPath(.{ .path = linker_script_path });
     const exec_options = b.addOptions();
     exec.addOptions("build_options", exec_options);
     exec_options.addOption(TestMode, "test_mode", test_mode);
-    exec.setBuildMode(build_mode);
-    exec.setLinkerScriptPath(std.build.FileSource{ .path = linker_script_path });
-    exec.setTarget(target);
 
-    const make_iso = switch (target.getCpuArch()) {
-        .i386 => b.addSystemCommand(&[_][]const u8{ "./makeiso.sh", boot_path, modules_path, iso_dir_path, exec_output_path, ramdisk_path, output_iso }),
+    const make_iso = switch (target.cpu_arch) {
+        .x86 => b.addSystemCommand(&[_][]const u8{ "./makeiso.sh", boot_path, modules_path, iso_dir_path, exec_output_path, ramdisk_path, output_iso }),
         .x86_64 => b.addSystemCommand(&[_][]const u8{ "./makeiso.sh", boot_path, modules_path, iso_dir_path, exec_output_path, ramdisk_path, output_iso }),
         else => unreachable,
     };
@@ -96,11 +95,10 @@ pub fn build(b: *Builder) !void {
         inline for (&[_][]const u8{ "user_program_data", "user_program" }) |user_program| {
             // Add some test files for the user mode runtime tests
             const user_program_step = b.addExecutable(user_program ++ ".elf", null);
-            user_program_step.setLinkerScriptPath(.{ .path = "test/user_program.ld" });
-            user_program_step.addAssemblyFile("test/" ++ user_program ++ ".s");
-            user_program_step.setOutputDir(b.install_path);
             user_program_step.setTarget(target);
             user_program_step.setBuildMode(build_mode);
+            user_program_step.setLinkerScriptPath(.{ .path = "test/user_program.ld" });
+            user_program_step.addAssemblyFile("test/" ++ user_program ++ ".s");
             user_program_step.strip = true;
             exec.step.dependOn(&user_program_step.step);
             const user_program_path = try std.mem.join(b.allocator, "/", &[_][]const u8{ b.install_path, user_program ++ ".elf" });
@@ -113,14 +111,15 @@ pub fn build(b: *Builder) !void {
 
     b.default_step.dependOn(&make_iso.step);
 
-    const test_step = b.step("test", "Run tests");
-    const unit_tests = b.addTest(main_src);
-    unit_tests.setBuildMode(build_mode);
-    unit_tests.setMainPkgPath(".");
+    const test_step = b.step("test", "Run unit tests");
+    const unit_tests = b.addTest(.{
+        .root_source_file = main_src,
+        .target = target,
+        .optimize = build_mode,
+    });
     const unit_test_options = b.addOptions();
     unit_tests.addOptions("build_options", unit_test_options);
     unit_test_options.addOption(TestMode, "test_mode", test_mode);
-    unit_tests.setTarget(.{ .cpu_arch = target.cpu_arch });
 
     if (builtin.os.tag != .windows) {
         b.enable_qemu = true;
@@ -144,15 +143,15 @@ pub fn build(b: *Builder) !void {
     var qemu_args_al = ArrayList([]const u8).init(b.allocator);
     defer qemu_args_al.deinit();
 
-    switch (target.getCpuArch()) {
-        .i386 => try qemu_args_al.append("qemu-system-i386"),
+    switch (target.cpu_arch) {
+        .x86 => try qemu_args_al.append("qemu-system-i386"),
         .x86_64 => try qemu_args_al.append("qemu-system-x86_64"),
         else => unreachable,
     }
     try qemu_args_al.append("-serial");
     try qemu_args_al.append("stdio");
-    switch (target.getCpuArch()) {
-        .i386, .x86_64 => {
+    switch (target.cpu_arch) {
+        .x86, .x86_64 => {
             try qemu_args_al.append("-boot");
             try qemu_args_al.append("d");
             try qemu_args_al.append("-cdrom");
@@ -267,7 +266,7 @@ const RamdiskStep = struct {
     builder: *Builder,
 
     /// The target for the build
-    target: CrossTarget,
+    target: std.Target.Query,
 
     /// The list of files to be added to the ramdisk
     files: []const []const u8,
@@ -298,11 +297,11 @@ const RamdiskStep = struct {
         defer ramdisk.close();
 
         // Get the targets endian
-        const endian = self.target.getCpuArch().endian();
+        const endian = self.target.cpu_arch.endian();
 
         // First write the number of files/headers
         std.debug.assert(self.files.len < std.math.maxInt(Usize));
-        try ramdisk.writer().writeInt(Usize, @truncate(Usize, self.files.len), endian);
+        try ramdisk.writer().writeInt(Usize, @truncate(self.files.len), endian);
         var current_offset: usize = 0;
         for (self.files) |file_path| {
             // Open, and read the file. Can get the size from this as well
@@ -314,14 +313,14 @@ const RamdiskStep = struct {
             // Write the header and file content to the ramdisk
             // Name length
             std.debug.assert(file_path[file_name_index..].len < std.math.maxInt(Usize));
-            try ramdisk.writer().writeInt(Usize, @truncate(Usize, file_path[file_name_index..].len), endian);
+            try ramdisk.writer().writeInt(Usize, @truncate(file_path[file_name_index..].len), endian);
 
             // Name
             try ramdisk.writer().writeAll(file_path[file_name_index..]);
 
             // Length
             std.debug.assert(file_content.len < std.math.maxInt(Usize));
-            try ramdisk.writer().writeInt(Usize, @truncate(Usize, file_content.len), endian);
+            try ramdisk.writer().writeInt(Usize, @truncate(file_content.len), endian);
 
             // File contest
             try ramdisk.writer().writeAll(file_content);
@@ -343,8 +342,8 @@ const RamdiskStep = struct {
     ///
     fn make(step: *Step) Error!void {
         const self = @fieldParentPtr(RamdiskStep, "step", step);
-        switch (self.target.getCpuArch()) {
-            .i386 => try writeRamdisk(u32, self),
+        switch (self.target.cpu_arch) {
+            .x86 => try writeRamdisk(u32, self),
             else => unreachable,
         }
     }
@@ -354,14 +353,14 @@ const RamdiskStep = struct {
     ///
     /// Argument:
     ///     IN builder: *Builder         - The build builder.
-    ///     IN target: CrossTarget       - The target for the build.
+    ///     IN target: std.Target.Query  - The target for the build.
     ///     IN files: []const []const u8 - The file names to be added to the ramdisk.
     ///     IN out_file_path: []const u8 - The output file path.
     ///
     /// Return: *RamdiskStep
     ///     The ramdisk step pointer to add to the build process.
     ///
-    pub fn create(builder: *Builder, target: CrossTarget, files: []const []const u8, out_file_path: []const u8) *RamdiskStep {
+    pub fn create(builder: *Builder, target: std.Target.Query, files: []const []const u8, out_file_path: []const u8) *RamdiskStep {
         const ramdisk_step = builder.allocator.create(RamdiskStep) catch unreachable;
         ramdisk_step.* = .{
             .step = Step.init(.custom, builder.fmt("Ramdisk", .{}), builder.allocator, make),

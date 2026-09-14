@@ -133,7 +133,7 @@ fn logTraceAddress(addr: usize) void {
 fn parseAddr(ptr: *[*]const u8, end: *const u8) (PanicError || std.fmt.ParseIntError)!usize {
     const addr_start = ptr.*;
     ptr.* = try parseNonWhitespace(ptr.*, end);
-    const len = @ptrToInt(ptr.*) - @ptrToInt(addr_start);
+    const len = @intFromPtr(ptr.*) - @intFromPtr(addr_start);
     const addr_str = addr_start[0..len];
     return std.fmt.parseInt(usize, addr_str, 16);
 }
@@ -154,7 +154,7 @@ fn parseAddr(ptr: *[*]const u8, end: *const u8) (PanicError || std.fmt.ParseIntE
 ///     PanicError.InvalidSymbolFile - The address given is greater than or equal to the end address.
 ///
 fn parseChar(ptr: [*]const u8, end: *const u8) PanicError!u8 {
-    if (@ptrToInt(ptr) >= @ptrToInt(end)) {
+    if (@intFromPtr(ptr) >= @intFromPtr(end)) {
         return PanicError.InvalidSymbolFile;
     }
     return ptr[0];
@@ -245,7 +245,7 @@ fn parseNonNewLine(ptr: [*]const u8, end: *const u8) PanicError![*]const u8 {
 fn parseName(ptr: *[*]const u8, end: *const u8) PanicError![]const u8 {
     const name_start = ptr.*;
     ptr.* = try parseNonNewLine(ptr.*, end);
-    const len = @ptrToInt(ptr.*) - @ptrToInt(name_start);
+    const len = @intFromPtr(ptr.*) - @intFromPtr(name_start);
     return name_start[0..len];
 }
 
@@ -337,9 +337,9 @@ pub fn initSymbols(mem_profile: *const mem.MemProfile, allocator: Allocator) (Pa
 
     var syms = SymbolMap.init(allocator);
     errdefer syms.deinit();
-    var kmap_ptr = @intToPtr([*]u8, kmap_start);
-    while (@ptrToInt(kmap_ptr) < kmap_end - 1) {
-        const entry = try parseMapEntry(&kmap_ptr, @intToPtr(*const u8, kmap_end));
+    var kmap_ptr = @ptrFromInt([*]u8, kmap_start);
+    while (@intFromPtr(kmap_ptr) < kmap_end - 1) {
+        const entry = try parseMapEntry(&kmap_ptr, @ptrFromInt(*const u8, kmap_end));
         try syms.addEntry(entry);
     }
     symbol_map = syms;
@@ -364,7 +364,7 @@ test "parseWhitespace" {
     const str: []const u8 = "    a";
     const end = @ptrCast(*const u8, str.ptr + str.len);
     var ptr = try parseWhitespace(str.ptr, end);
-    try testing.expectEqual(@ptrToInt(str.ptr) + 4, @ptrToInt(ptr));
+    try testing.expectEqual(@intFromPtr(str.ptr) + 4, @intFromPtr(ptr));
 }
 
 test "parseWhitespace fails without a terminating whitespace" {
@@ -377,7 +377,7 @@ test "parseNonWhitespace" {
     const str: []const u8 = "ab ";
     const end = @ptrCast(*const u8, str.ptr + str.len);
     var ptr = try parseNonWhitespace(str.ptr, end);
-    try testing.expectEqual(@ptrToInt(str.ptr) + 2, @ptrToInt(ptr));
+    try testing.expectEqual(@intFromPtr(str.ptr) + 2, @intFromPtr(ptr));
 }
 
 test "parseNonWhitespace fails without a terminating whitespace" {
@@ -390,7 +390,7 @@ test "parseNonNewLine" {
     const str: []const u8 = "ab\n";
     const end = @ptrCast(*const u8, str.ptr + str.len);
     var ptr = try parseNonNewLine(str.ptr, end);
-    try testing.expectEqual(@ptrToInt(str.ptr) + 2, @ptrToInt(ptr));
+    try testing.expectEqual(@intFromPtr(str.ptr) + 2, @intFromPtr(ptr));
 }
 
 test "parseNonNewLine fails without a terminating newline" {

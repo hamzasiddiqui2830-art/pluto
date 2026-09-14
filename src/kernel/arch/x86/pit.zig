@@ -235,7 +235,7 @@ inline fn sendDataToCounter(counter: CounterSelect, data: u8) void {
 ///
 fn pitHandler(ctx: *arch.CpuState) usize {
     ticks +%= 1;
-    return @ptrToInt(ctx);
+    return @intFromPtr(ctx);
 }
 
 ///

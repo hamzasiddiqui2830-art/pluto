@@ -334,8 +334,8 @@ pub fn initMem(mb_info: BootPayload) Allocator.Error!MemProfile {
 
     // Reserve kernel regions
     const kernel_virt = mem.Range{
-        .start = @ptrToInt(&KERNEL_VADDR_START),
-        .end = @ptrToInt(&KERNEL_STACK_START),
+        .start = @intFromPtr(&KERNEL_VADDR_START),
+        .end = @intFromPtr(&KERNEL_STACK_START),
     };
     const kernel_phy = mem.Range{
         .start = mem.virtToPhys(kernel_virt.start),
@@ -348,8 +348,8 @@ pub fn initMem(mb_info: BootPayload) Allocator.Error!MemProfile {
 
     // Map kernel stack
     const kernel_stack_virt = mem.Range{
-        .start = @ptrToInt(&KERNEL_STACK_START),
-        .end = @ptrToInt(&KERNEL_STACK_END),
+        .start = @intFromPtr(&KERNEL_STACK_START),
+        .end = @intFromPtr(&KERNEL_STACK_END),
     };
     const kernel_stack_phy = mem.Range{
         .start = mem.virtToPhys(kernel_stack_virt.start),
@@ -394,10 +394,10 @@ pub fn initTask(task: *Task, entry_point: usize, allocator: Allocator, set_up_st
         stack.*[bottom] = entry_point; // RIP
         stack.*[bottom - 1] = code_offset; // CS
         stack.*[bottom - 2] = 0x202; // RFLAGS
-        stack.*[bottom - 3] = @ptrToInt(&stack.*[stack.len - 1]); // RSP
+        stack.*[bottom - 3] = @intFromPtr(&stack.*[stack.len - 1]); // RSP
         stack.*[bottom - 4] = data_offset; // SS
 
-        task.stack_pointer = @ptrToInt(&stack.*[bottom - 4]);
+        task.stack_pointer = @intFromPtr(&stack.*[bottom - 4]);
     }
 
     if (!task.kernel and !builtin.is_test) {
@@ -445,7 +445,7 @@ pub fn runtimeTestChecksMem(the_vmm: *const vmm.VirtualMemoryManager(VmmPayload)
     while (addr < the_vmm.end and (the_vmm.isSet(addr) catch unreachable)) {
         addr += vmm.BLOCK_SIZE;
     }
-    const should_fault = @intToPtr(*usize, addr).*;
+    const should_fault = @ptrFromInt(*usize, addr).*;
     log.debug("This should not be printed: {x}\\n", .{should_fault});
 }
 

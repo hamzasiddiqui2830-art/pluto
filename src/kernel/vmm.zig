@@ -492,7 +492,7 @@ pub fn VirtualMemoryManager(comptime Payload: type) type {
                 }
                 // Copy to vaddr from above
                 const align_offset = address - start_addr;
-                var data_copy = @intToPtr([*]u8, v_start + align_offset)[0..data.len];
+                var data_copy = @ptrFromInt([*]u8, v_start + align_offset)[0..data.len];
                 if (from) {
                     std.mem.copy(u8, data_copy, data);
                 } else {
@@ -562,7 +562,7 @@ pub fn init(mem_profile: *const mem.MemProfile, allocator: Allocator) Allocator.
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
 
-    kernel_vmm = try VirtualMemoryManager(arch.VmmPayload).init(@ptrToInt(&KERNEL_ADDR_OFFSET), 0xFFFFFFFF, allocator, arch.VMM_MAPPER, arch.KERNEL_VMM_PAYLOAD);
+    kernel_vmm = try VirtualMemoryManager(arch.VmmPayload).init(@intFromPtr(&KERNEL_ADDR_OFFSET), 0xFFFFFFFF, allocator, arch.VMM_MAPPER, arch.KERNEL_VMM_PAYLOAD);
 
     // Map all the reserved virtual addresses.
     for (mem_profile.virtual_reserved) |entry| {
@@ -826,7 +826,7 @@ test "copyData from" {
     try vmm2.copyData(&vmm, true, buff[0..buff.len], alloc);
 
     // Make sure they are the same
-    var buff2 = @intToPtr([*]u8, alloc)[0..buff.len];
+    var buff2 = @ptrFromInt([*]u8, alloc)[0..buff.len];
     try std.testing.expectEqualSlices(u8, buff[0..buff.len], buff2);
     try std.testing.expectEqual(vmm_free_entries, vmm.bmp.num_free_entries);
     // TODO Remove the subtraction by one once we are able to free the temp space in copyData
@@ -855,7 +855,7 @@ test "copyDaya to" {
     var vmm2_free_entries = vmm2.bmp.num_free_entries;
 
     var buff: [4]u8 = [4]u8{ 10, 11, 12, 13 };
-    var buff2 = @intToPtr([*]u8, alloc)[0..buff.len];
+    var buff2 = @ptrFromInt([*]u8, alloc)[0..buff.len];
     try vmm2.copyData(&vmm, false, buff[0..], alloc);
 
     try std.testing.expectEqualSlices(u8, buff[0..buff.len], buff2);
@@ -900,14 +900,14 @@ pub fn testInit(num_entries: u32) Allocator.Error!VirtualMemoryManager(arch.VmmP
         .modules = &[_]mem.Module{},
     };
     pmm.init(&mem_profile, std.testing.allocator);
-    const test_vaddr_start = @ptrToInt(&(try std.testing.allocator.alloc(u8, num_entries * BLOCK_SIZE))[0]);
+    const test_vaddr_start = @intFromPtr(&(try std.testing.allocator.alloc(u8, num_entries * BLOCK_SIZE))[0]);
     kernel_vmm = try VirtualMemoryManager(arch.VmmPayload).init(test_vaddr_start, test_vaddr_start + num_entries * BLOCK_SIZE, std.testing.allocator, test_mapper, arch.KERNEL_VMM_PAYLOAD);
     return kernel_vmm;
 }
 
 pub fn testDeinit(vmm: *VirtualMemoryManager(arch.VmmPayload)) void {
     vmm.deinit();
-    const space = @intToPtr([*]u8, vmm.start)[0 .. vmm.end - vmm.start];
+    const space = @ptrFromInt([*]u8, vmm.start)[0 .. vmm.end - vmm.start];
     vmm.allocator.free(space);
     if (test_allocations) |allocs| {
         allocs.deinit();
@@ -987,8 +987,8 @@ pub fn runtimeTests(comptime Payload: type, vmm: *VirtualMemoryManager(Payload),
 ///     IN mem_profile: *const mem.MemProfile - The mem profile with details about all the memory regions that should be reserved
 ///
 fn rt_correctMapping(comptime Payload: type, vmm: *VirtualMemoryManager(Payload), mem_profile: *const mem.MemProfile) void {
-    const v_start = std.mem.alignBackward(@ptrToInt(mem_profile.vaddr_start), BLOCK_SIZE);
-    const v_end = std.mem.alignForward(@ptrToInt(mem_profile.vaddr_end), BLOCK_SIZE);
+    const v_start = std.mem.alignBackward(@intFromPtr(mem_profile.vaddr_start), BLOCK_SIZE);
+    const v_end = std.mem.alignForward(@intFromPtr(mem_profile.vaddr_end), BLOCK_SIZE);
 
     var vaddr = vmm.start;
     while (vaddr < vmm.end - BLOCK_SIZE) : (vaddr += BLOCK_SIZE) {
@@ -1063,7 +1063,7 @@ fn rt_copyData(vmm: *VirtualMemoryManager(arch.VmmPayload)) void {
 
     // Make sure that the data at the allocated address is correct
     // Since vmm2 is a mirror of vmm, this address should be mapped by the CPU's MMU
-    const dest_buff = @intToPtr([*]u8, addr)[0..buff.len];
+    const dest_buff = @ptrFromInt([*]u8, addr)[0..buff.len];
     if (!std.mem.eql(u8, buff[0..buff.len], dest_buff)) {
         panic(@errorReturnTrace(), "Data copied to vmm2 doesn't have the expected values\n", .{});
     }

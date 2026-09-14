@@ -116,7 +116,7 @@ fn pageMove(dest: []u16, src: []u16, size: u16) TtyError!void {
     if (size == 0) return;
 
     // Make sure we don't override the values we want to copy
-    if (@ptrToInt(&dest[0]) < @ptrToInt(&src[0])) {
+    if (@intFromPtr(&dest[0]) < @intFromPtr(&src[0])) {
         var i: u16 = 0;
         while (i != size) : (i += 1) {
             dest[i] = src[i];
@@ -482,7 +482,7 @@ pub fn setColour(new_colour: u8) void {
 ///     The virtual address of the video buffer
 ///
 pub fn getVideoBufferAddress() usize {
-    return @ptrToInt(&KERNEL_ADDR_OFFSET) + 0xB8000;
+    return @intFromPtr(&KERNEL_ADDR_OFFSET) + 0xB8000;
 }
 
 ///
@@ -493,9 +493,9 @@ pub fn getVideoBufferAddress() usize {
 pub fn init() void {
     // Video buffer in higher half
     if (is_test) {
-        video_buffer = @intToPtr([*]volatile u16, mock_getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
+        video_buffer = @ptrFromInt([*]volatile u16, mock_getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
     } else {
-        video_buffer = @intToPtr([*]volatile u16, getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
+        video_buffer = @ptrFromInt([*]volatile u16, getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
     }
 
     setColour(vga.entryColour(vga.COLOUR_LIGHT_GREY, vga.COLOUR_BLACK));
@@ -521,7 +521,7 @@ pub fn init() void {
 
         // Move 7 rows down
         i = 0;
-        if (@ptrToInt(&video_buffer[ROW_MIN * vga.WIDTH]) < @ptrToInt(&video_buffer[row_offset * vga.WIDTH])) {
+        if (@intFromPtr(&video_buffer[ROW_MIN * vga.WIDTH]) < @intFromPtr(&video_buffer[row_offset * vga.WIDTH])) {
             while (i != row * vga.WIDTH) : (i += 1) {
                 video_buffer[i + (ROW_MIN * vga.WIDTH)] = video_buffer[i + (row_offset * vga.WIDTH)];
             }
@@ -557,7 +557,7 @@ const test_colour: u8 = vga.orig_entryColour(vga.COLOUR_LIGHT_GREY, vga.COLOUR_B
 var test_video_buffer: [VIDEO_BUFFER_SIZE]u16 = [_]u16{0} ** VIDEO_BUFFER_SIZE;
 
 fn mock_getVideoBufferAddress() usize {
-    return @ptrToInt(&test_video_buffer);
+    return @intFromPtr(&test_video_buffer);
 }
 
 fn resetGlobals() void {
@@ -583,7 +583,7 @@ fn setUpVideoBuffer() !void {
     // Change to a stack location
     video_buffer = test_video_buffer[0..VIDEO_BUFFER_SIZE];
 
-    try expectEqual(@ptrToInt(video_buffer.ptr), @ptrToInt(&test_video_buffer[0]));
+    try expectEqual(@intFromPtr(video_buffer.ptr), @intFromPtr(&test_video_buffer[0]));
 
     colour = test_colour;
     blank = vga.orig_entry(0, test_colour);
@@ -2013,8 +2013,8 @@ test "init not 0,0" {
 /// Test the init function set up everything properly.
 ///
 fn rt_initialisedGlobals() void {
-    if (@ptrToInt(video_buffer.ptr) != @ptrToInt(&KERNEL_ADDR_OFFSET) + 0xB8000) {
-        panic(@errorReturnTrace(), "Video buffer not at correct virtual address, found: {}\n", .{@ptrToInt(video_buffer.ptr)});
+    if (@intFromPtr(video_buffer.ptr) != @intFromPtr(&KERNEL_ADDR_OFFSET) + 0xB8000) {
+        panic(@errorReturnTrace(), "Video buffer not at correct virtual address, found: {}\n", .{@intFromPtr(video_buffer.ptr)});
     }
 
     if (page_index != 0) {

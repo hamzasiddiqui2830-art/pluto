@@ -43,7 +43,7 @@ fn setupSyscallMsrs() void {
     wrmsr(STAR_MSR, 0);
     
     // Write the address of our syscall handler to LSTAR
-    const handler_addr = @ptrToInt(syscallEntry);
+    const handler_addr = @intFromPtr(syscallEntry);
     wrmsr(LSTAR_MSR, handler_addr);
     
     // Set SFMASK to mask interrupts during syscall

@@ -70,7 +70,7 @@ pub fn pickNextTask(ctx: *arch.CpuState) usize {
         else => {},
     }
     // Save the stack pointer from old task
-    current_task.stack_pointer = @ptrToInt(ctx);
+    current_task.stack_pointer = @intFromPtr(ctx);
 
     // If we can't switch, then continue with the current task
     if (!can_switch) {
@@ -142,8 +142,8 @@ pub fn init(allocator: Allocator, mem_profile: *const mem.MemProfile) Allocator.
     current_task = try Task.create(0, true, &vmm.kernel_vmm, allocator, false);
     errdefer allocator.destroy(current_task);
 
-    const kernel_stack_size = @ptrToInt(&KERNEL_STACK_END) - @ptrToInt(&KERNEL_STACK_START);
-    current_task.kernel_stack = @intToPtr([*]u32, @ptrToInt(&KERNEL_STACK_START))[0..kernel_stack_size];
+    const kernel_stack_size = @intFromPtr(&KERNEL_STACK_END) - @intFromPtr(&KERNEL_STACK_START);
+    current_task.kernel_stack = @ptrFromInt([*]u32, @intFromPtr(&KERNEL_STACK_START))[0..kernel_stack_size];
     // ESP will be saved on next schedule
 
     // Run the runtime tests here
@@ -153,7 +153,7 @@ pub fn init(allocator: Allocator, mem_profile: *const mem.MemProfile) Allocator.
     }
 
     // Create the idle task when there are no more tasks left
-    var idle_task = try Task.create(@ptrToInt(idle), true, &vmm.kernel_vmm, allocator, true);
+    var idle_task = try Task.create(@intFromPtr(idle), true, &vmm.kernel_vmm, allocator, true);
     errdefer idle_task.destroy(allocator);
 
     try scheduleTask(idle_task, allocator);
@@ -180,7 +180,7 @@ fn createTestTask(allocator: Allocator) Allocator.Error!*Task {
 }
 
 fn destroyTestTask(self: *Task, allocator: Allocator) void {
-    if (@ptrToInt(self.kernel_stack.ptr) != @ptrToInt(&KERNEL_STACK_START)) {
+    if (@intFromPtr(self.kernel_stack.ptr) != @intFromPtr(&KERNEL_STACK_START)) {
         allocator.free(self.kernel_stack);
     }
     allocator.destroy(self);
@@ -199,15 +199,15 @@ test "pickNextTask" {
     defer first.destroy(allocator);
     current_task = first;
     current_task.pid = 0;
-    current_task.kernel_stack = @intToPtr([*]u32, @ptrToInt(&KERNEL_STACK_START))[0..4096];
-    current_task.stack_pointer = @ptrToInt(&KERNEL_STACK_START);
+    current_task.kernel_stack = @ptrFromInt([*]u32, @intFromPtr(&KERNEL_STACK_START))[0..4096];
+    current_task.stack_pointer = @intFromPtr(&KERNEL_STACK_START);
 
     // Create two tasks and schedule them
-    var test_fn1_task = try Task.create(@ptrToInt(test_fn1), true, undefined, allocator, true);
+    var test_fn1_task = try Task.create(@intFromPtr(test_fn1), true, undefined, allocator, true);
     defer test_fn1_task.destroy(allocator);
     try scheduleTask(test_fn1_task, allocator);
 
-    var test_fn2_task = try Task.create(@ptrToInt(test_fn2), true, undefined, allocator, true);
+    var test_fn2_task = try Task.create(@intFromPtr(test_fn2), true, undefined, allocator, true);
     defer test_fn2_task.destroy(allocator);
     try scheduleTask(test_fn2_task, allocator);
 
@@ -217,21 +217,21 @@ test "pickNextTask" {
 
     try expectEqual(pickNextTask(&ctx), fn1_stack_pointer);
     // The stack pointer of the re-added task should point to the context
-    try expectEqual(tasks.first.?.data.stack_pointer, @ptrToInt(&ctx));
+    try expectEqual(tasks.first.?.data.stack_pointer, @intFromPtr(&ctx));
 
     // Should be the PID of the next task
     try expectEqual(current_task.pid, 1);
 
     try expectEqual(pickNextTask(&ctx), fn2_stack_pointer);
     // The stack pointer of the re-added task should point to the context
-    try expectEqual(tasks.first.?.data.stack_pointer, @ptrToInt(&ctx));
+    try expectEqual(tasks.first.?.data.stack_pointer, @intFromPtr(&ctx));
 
     // Should be the PID of the next task
     try expectEqual(current_task.pid, 2);
 
-    try expectEqual(pickNextTask(&ctx), @ptrToInt(&ctx));
+    try expectEqual(pickNextTask(&ctx), @intFromPtr(&ctx));
     // The stack pointer of the re-added task should point to the context
-    try expectEqual(tasks.first.?.data.stack_pointer, @ptrToInt(&ctx));
+    try expectEqual(tasks.first.?.data.stack_pointer, @intFromPtr(&ctx));
 
     // Should be back to the beginning
     try expectEqual(current_task.pid, 0);
@@ -252,7 +252,7 @@ test "createNewTask add new task" {
     // Init the task list
     tasks = TailQueue(*Task){};
 
-    var test_fn1_task = try Task.create(@ptrToInt(test_fn1), true, undefined, allocator, true);
+    var test_fn1_task = try Task.create(@intFromPtr(test_fn1), true, undefined, allocator, true);
     defer test_fn1_task.destroy(allocator);
     try scheduleTask(test_fn1_task, allocator);
 
@@ -268,8 +268,8 @@ test "init" {
     try init(allocator, undefined);
 
     try expectEqual(current_task.pid, 0);
-    try expectEqual(@ptrToInt(current_task.kernel_stack.ptr), @ptrToInt(&KERNEL_STACK_START));
-    try expectEqual(current_task.kernel_stack.len, @ptrToInt(&KERNEL_STACK_END) - @ptrToInt(&KERNEL_STACK_START));
+    try expectEqual(@intFromPtr(current_task.kernel_stack.ptr), @intFromPtr(&KERNEL_STACK_START));
+    try expectEqual(current_task.kernel_stack.len, @intFromPtr(&KERNEL_STACK_END) - @intFromPtr(&KERNEL_STACK_START));
 
     try expectEqual(tasks.len, 1);
 
@@ -307,7 +307,7 @@ fn rt_variable_preserved(allocator: Allocator) void {
     defer allocator.destroy(is_set);
     is_set.* = true;
 
-    var test_task = Task.create(@ptrToInt(task_function), true, &vmm.kernel_vmm, allocator, true) catch |e| panic(@errorReturnTrace(), "Failed to create task in rt_variable_preserved: {}\n", .{e});
+    var test_task = Task.create(@intFromPtr(task_function), true, &vmm.kernel_vmm, allocator, true) catch |e| panic(@errorReturnTrace(), "Failed to create task in rt_variable_preserved: {}\n", .{e});
     scheduleTask(test_task, allocator) catch |e| panic(@errorReturnTrace(), "Failed to schedule a task in rt_variable_preserved: {}\n", .{e});
     // TODO: Need to add the ability to remove tasks
 
@@ -360,7 +360,7 @@ fn rt_user_task(allocator: Allocator, mem_profile: *const mem.MemProfile) void {
         var task_vmm = allocator.create(vmm.VirtualMemoryManager(arch.VmmPayload)) catch |e| {
             panic(@errorReturnTrace(), "Failed to allocate VMM for {s}: {}\n", .{ user_program, e });
         };
-        task_vmm.* = vmm.VirtualMemoryManager(arch.VmmPayload).init(0, @ptrToInt(mem_profile.vaddr_start), allocator, arch.VMM_MAPPER, undefined) catch |e| panic(@errorReturnTrace(), "Failed to create the vmm for {s}: {}\n", .{ user_program, e });
+        task_vmm.* = vmm.VirtualMemoryManager(arch.VmmPayload).init(0, @intFromPtr(mem_profile.vaddr_start), allocator, arch.VMM_MAPPER, undefined) catch |e| panic(@errorReturnTrace(), "Failed to create the vmm for {s}: {}\n", .{ user_program, e });
 
         const user_program_file = fs.openFile(user_program, .NO_CREATION) catch |e| {
             panic(@errorReturnTrace(), "Failed to open {s}: {}\n", .{ user_program, e });

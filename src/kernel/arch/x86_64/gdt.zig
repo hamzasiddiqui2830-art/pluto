@@ -264,12 +264,12 @@ pub fn init() void {
     defer log.info("Done\\n", .{});
     
     // Initialize TSS descriptor
-    const tss_base: u64 = @ptrToInt(&main_tss_entry);
+    const tss_base: u64 = @intFromPtr(&main_tss_entry);
     const tss_limit: u32 = @sizeOf(Tss) - 1;
     gdt_entries[TSS_INDEX] = makeGdtEntry(tss_base, tss_limit, TSS_SEGMENT, NULL_FLAGS);
     
     // Set GDT pointer base
-    gdt_ptr.base = @ptrToInt(&gdt_entries[0]);
+    gdt_ptr.base = @intFromPtr(&gdt_entries[0]);
     
     // Load GDT (declared in arch.zig)
     const arch = @import("arch.zig");

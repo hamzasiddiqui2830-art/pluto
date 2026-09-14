@@ -143,7 +143,7 @@ export fn isrHandler(ctx: *arch.CpuState) usize {
     // Get the interrupt number
     const isr_num = ctx.int_num;
 
-    var ret_esp = @ptrToInt(ctx);
+    var ret_esp = @intFromPtr(ctx);
 
     if (isValidIsr(isr_num)) {
         if (isr_num == syscalls.INTERRUPT) {
@@ -253,7 +253,7 @@ pub fn init() void {
     }
 }
 
-fn testFunction0() callconv(.Naked) void {}
+fn testFunction0() linksection(".text") void {}
 fn testFunction1(ctx: *arch.CpuState) u32 {
     // Suppress unused var warning
     _ = ctx;
@@ -400,7 +400,7 @@ fn rt_unregisteredHandlers() void {
 ///
 fn rt_openedIdtEntries() void {
     const loaded_idt = arch.sidt();
-    const idt_entries = @intToPtr([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
+    const idt_entries = @ptrFromInt([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
 
     for (idt_entries) |entry, i| {
         if (isValidIsr(i)) {

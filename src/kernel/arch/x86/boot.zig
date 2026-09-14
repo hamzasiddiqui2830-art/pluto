@@ -67,7 +67,7 @@ extern var KERNEL_ADDR_OFFSET: *u32;
 
 extern fn kmain(mb_info: arch.BootPayload) void;
 
-export fn _start() align(16) linksection(".text.boot") callconv(.Naked) noreturn {
+export fn _start() align(16) linksection(".text.boot") noreturn {
     // Set the page directory to the boot directory
     asm volatile (
         \\.extern boot_page_directory
@@ -92,7 +92,7 @@ export fn _start() align(16) linksection(".text.boot") callconv(.Naked) noreturn
     while (true) {}
 }
 
-export fn start_higher_half() callconv(.Naked) noreturn {
+export fn start_higher_half() linksection(".text") noreturn {
     // Invalidate the page for the first 4MiB as it's no longer needed
     asm volatile ("invlpg (0)");
 
@@ -108,7 +108,7 @@ export fn start_higher_half() callconv(.Naked) noreturn {
     const mb_info_addr = asm (
         \\mov %%ebx, %[res]
         : [res] "=r" (-> usize),
-    ) + @ptrToInt(&KERNEL_ADDR_OFFSET);
-    kmain(@intToPtr(arch.BootPayload, mb_info_addr));
+    ) + @intFromPtr(&KERNEL_ADDR_OFFSET);
+    kmain(@ptrFromInt(arch.BootPayload, mb_info_addr));
     while (true) {}
 }

@@ -77,7 +77,7 @@ fn handle(ctx: *arch.CpuState) usize {
     } else {
         log.warn("Syscall {} is invalid\n", .{syscall});
     }
-    return @ptrToInt(ctx);
+    return @intFromPtr(ctx);
 }
 
 ///

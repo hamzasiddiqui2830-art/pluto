@@ -75,7 +75,7 @@ pub var ADDR_OFFSET: usize = undefined;
 pub fn virtToPhys(virt: anytype) @TypeOf(virt) {
     const T = @TypeOf(virt);
     return switch (@typeInfo(T)) {
-        .Pointer => @intToPtr(T, @ptrToInt(virt) - ADDR_OFFSET),
+        .Pointer => @ptrFromInt(T, @intFromPtr(virt) - ADDR_OFFSET),
         .Int => virt - ADDR_OFFSET,
         else => @compileError("Only pointers and integers are supported"),
     };
@@ -93,7 +93,7 @@ pub fn virtToPhys(virt: anytype) @TypeOf(virt) {
 pub fn physToVirt(phys: anytype) @TypeOf(phys) {
     const T = @TypeOf(phys);
     return switch (@typeInfo(T)) {
-        .Pointer => @intToPtr(T, @ptrToInt(phys) + ADDR_OFFSET),
+        .Pointer => @ptrFromInt(T, @intFromPtr(phys) + ADDR_OFFSET),
         .Int => phys + ADDR_OFFSET,
         else => @compileError("Only pointers and integers are supported"),
     };
@@ -104,7 +104,7 @@ test "physToVirt" {
     const offset: usize = ADDR_OFFSET;
     try expectEqual(physToVirt(@as(usize, 0)), offset + 0);
     try expectEqual(physToVirt(@as(usize, 123)), offset + 123);
-    try expectEqual(@ptrToInt(physToVirt(@intToPtr(*align(1) usize, 123))), offset + 123);
+    try expectEqual(@intFromPtr(physToVirt(@ptrFromInt(*align(1) usize, 123))), offset + 123);
 }
 
 test "virtToPhys" {
@@ -112,5 +112,5 @@ test "virtToPhys" {
     const offset: usize = ADDR_OFFSET;
     try expectEqual(virtToPhys(offset + 0), 0);
     try expectEqual(virtToPhys(offset + 123), 123);
-    try expectEqual(@ptrToInt(virtToPhys(@intToPtr(*align(1) usize, offset + 123))), 123);
+    try expectEqual(@intFromPtr(virtToPhys(@ptrFromInt(*align(1) usize, offset + 123))), 123);
 }

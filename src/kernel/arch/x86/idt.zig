@@ -47,7 +47,7 @@ pub const IdtPtr = packed struct {
     base: u32,
 };
 
-pub const InterruptHandler = fn () callconv(.Naked) void;
+pub const InterruptHandler = fn () linksection(".text") void;
 
 /// The error set for the IDT
 pub const IdtError = error{
@@ -171,7 +171,7 @@ pub fn openInterruptGate(index: u8, handler: InterruptHandler) IdtError!void {
         return IdtError.IdtEntryExists;
     }
 
-    idt_entries[index] = makeEntry(@ptrToInt(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0);
+    idt_entries[index] = makeEntry(@intFromPtr(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0);
 }
 
 ///
@@ -181,7 +181,7 @@ pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
 
-    idt_ptr.base = @ptrToInt(&idt_entries);
+    idt_ptr.base = @intFromPtr(&idt_entries);
 
     arch.lidt(&idt_ptr);
 
@@ -191,12 +191,12 @@ pub fn init() void {
     }
 }
 
-fn testHandler0() callconv(.Naked) void {}
-fn testHandler1() callconv(.Naked) void {}
+fn testHandler0() linksection(".text") void {}
+fn testHandler1() linksection(".text") void {}
 
 fn mock_lidt(ptr: *const IdtPtr) void {
     expectEqual(TABLE_SIZE, ptr.limit) catch panic(null, "IDT pointer limit was not correct", .{});
-    expectEqual(@ptrToInt(&idt_entries[0]), ptr.base) catch panic(null, "IDT pointer base was not correct", .{});
+    expectEqual(@intFromPtr(&idt_entries[0]), ptr.base) catch panic(null, "IDT pointer base was not correct", .{});
 }
 
 test "IDT entries" {
@@ -246,7 +246,7 @@ test "openInterruptGate" {
     openInterruptGate(index, testHandler0) catch unreachable;
     try expectError(IdtError.IdtEntryExists, openInterruptGate(index, testHandler0));
 
-    const test_fn_0_addr = @ptrToInt(testHandler0);
+    const test_fn_0_addr = @intFromPtr(testHandler0);
 
     const expected_entry0 = IdtEntry{
         .base_low = @truncate(u16, test_fn_0_addr),
@@ -314,7 +314,7 @@ test "init" {
     init();
 
     // Post testing
-    try expectEqual(@ptrToInt(&idt_entries), idt_ptr.base);
+    try expectEqual(@intFromPtr(&idt_entries), idt_ptr.base);
 
     // Reset
     idt_ptr.base = 0;

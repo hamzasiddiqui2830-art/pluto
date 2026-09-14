@@ -221,7 +221,7 @@ fn mapDirEntry(dir: *Directory, virt_start: usize, virt_end: usize, phys_start: 
         // Create a table and put the physical address in the dir entry
         table = &(try allocator.alignedAlloc(Table, @truncate(u29, PAGE_SIZE_4KB), 1))[0];
         @memset(@ptrCast([*]u8, table), 0, @sizeOf(Table));
-        const table_phys_addr = if (builtin.is_test) @ptrToInt(table) else vmm.kernel_vmm.virtToPhys(@ptrToInt(table)) catch |e| {
+        const table_phys_addr = if (builtin.is_test) @intFromPtr(table) else vmm.kernel_vmm.virtToPhys(@intFromPtr(table)) catch |e| {
             panic(@errorReturnTrace(), "Failed getting the physical address for a page table: {}\n", .{e});
         };
         dir_entry.* |= DENTRY_PAGE_ADDR & table_phys_addr;
@@ -460,12 +460,12 @@ pub fn init(mem_profile: *const MemProfile) void {
     isr.registerIsr(isr.PAGE_FAULT, if (build_options.test_mode == .Initialisation) rt_pageFault else pageFault) catch |e| {
         panic(@errorReturnTrace(), "Failed to register page fault ISR: {}\n", .{e});
     };
-    const dir_physaddr = @ptrToInt(mem.virtToPhys(&kernel_directory));
+    const dir_physaddr = @intFromPtr(mem.virtToPhys(&kernel_directory));
     asm volatile ("mov %[addr], %%cr3"
         :
         : [addr] "{eax}" (dir_physaddr),
     );
-    const v_end = std.mem.alignForward(@ptrToInt(mem_profile.vaddr_end), PAGE_SIZE_4KB);
+    const v_end = std.mem.alignForward(@intFromPtr(mem_profile.vaddr_end), PAGE_SIZE_4KB);
     switch (build_options.test_mode) {
         .Initialisation => runtimeTests(v_end),
         else => {},
@@ -662,16 +662,16 @@ var use_callback2 = false;
 fn rt_pageFault(ctx: *arch.CpuState) u32 {
     faulted = true;
     // Return to the fault callback
-    ctx.eip = @ptrToInt(&if (use_callback2) rt_fault_callback2 else rt_fault_callback);
+    ctx.eip = @intFromPtr(&if (use_callback2) rt_fault_callback2 else rt_fault_callback);
 
-    return @ptrToInt(ctx);
+    return @intFromPtr(ctx);
 }
 
 fn rt_accessUnmappedMem(v_end: u32) void {
     use_callback2 = false;
     faulted = false;
     // Accessing unmapped mem causes a page fault
-    var ptr = @intToPtr(*u8, v_end);
+    var ptr = @ptrFromInt(*u8, v_end);
     var value = ptr.*;
     // Need this as in release builds the above is optimised out so it needs to be use
     log.err("FAILURE: Value: {}\n", .{value});
@@ -690,7 +690,7 @@ fn rt_accessMappedMem(v_end: u32) void {
     use_callback2 = true;
     faulted = false;
     // Accessing mapped memory doesn't cause a page fault
-    var ptr = @intToPtr(*u8, v_end - PAGE_SIZE_4KB);
+    var ptr = @ptrFromInt(*u8, v_end - PAGE_SIZE_4KB);
     // Print the value to avoid the load from being optimised away
     log.info("Read value in mapped memory: {}\n", .{ptr.*});
     asm volatile (

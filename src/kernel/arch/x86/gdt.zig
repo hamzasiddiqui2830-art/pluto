@@ -408,10 +408,10 @@ pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
     // Initiate TSS
-    gdt_entries[TSS_INDEX] = makeGdtEntry(@ptrToInt(&main_tss_entry), @sizeOf(Tss) - 1, TSS_SEGMENT, NULL_FLAGS);
+    gdt_entries[TSS_INDEX] = makeGdtEntry(@intFromPtr(&main_tss_entry), @sizeOf(Tss) - 1, TSS_SEGMENT, NULL_FLAGS);
 
     // Set the base address where all the GDT entries are.
-    gdt_ptr.base = @ptrToInt(&gdt_entries[0]);
+    gdt_ptr.base = @intFromPtr(&gdt_entries[0]);
 
     // Load the GDT
     arch.lgdt(&gdt_ptr);
@@ -427,7 +427,7 @@ pub fn init() void {
 
 fn mock_lgdt(ptr: *const GdtPtr) void {
     expectEqual(TABLE_SIZE, ptr.limit) catch panic(null, "GDT pointer limit was not correct", .{});
-    expectEqual(@ptrToInt(&gdt_entries[0]), ptr.base) catch panic(null, "GDT pointer base was not correct", .{});
+    expectEqual(@intFromPtr(&gdt_entries[0]), ptr.base) catch panic(null, "GDT pointer base was not correct", .{});
 }
 
 test "GDT entries" {
@@ -538,7 +538,7 @@ test "init" {
     // Post testing
     const tss_entry = gdt_entries[TSS_INDEX];
     const tss_limit = @sizeOf(Tss) - 1;
-    const tss_addr = @ptrToInt(&main_tss_entry);
+    const tss_addr = @intFromPtr(&main_tss_entry);
 
     var expected: u64 = 0;
     expected |= @as(u64, @truncate(u16, tss_limit));

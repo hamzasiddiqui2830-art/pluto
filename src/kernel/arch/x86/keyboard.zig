@@ -167,7 +167,7 @@ fn onKeyEvent(ctx: *arch.CpuState) usize {
             log.warn("No room for keyboard action {}\n", .{action});
         }
     }
-    return @ptrToInt(ctx);
+    return @intFromPtr(ctx);
 }
 
 ///

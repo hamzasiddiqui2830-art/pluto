@@ -46,7 +46,7 @@ export fn irqHandler(ctx: *arch.CpuState) usize {
         panic(@errorReturnTrace(), "Not an IRQ number: {}\n", .{ctx.int_num});
     }
 
-    var ret_esp = @ptrToInt(ctx);
+    var ret_esp = @intFromPtr(ctx);
 
     const irq_offset = ctx.int_num - IRQ_OFFSET;
     if (isValidIrq(irq_offset)) {
@@ -144,7 +144,7 @@ pub fn init() void {
     }
 }
 
-fn testFunction0() callconv(.Naked) void {}
+fn testFunction0() linksection(".text") void {}
 
 fn testFunction1(ctx: *arch.CpuState) u32 {
     // Suppress unused variable warnings
@@ -260,7 +260,7 @@ fn rt_unregisteredHandlers() void {
 ///
 fn rt_openedIdtEntries() void {
     const loaded_idt = arch.sidt();
-    const idt_entries = @intToPtr([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
+    const idt_entries = @ptrFromInt([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
 
     for (idt_entries) |entry, i| {
         if (i >= IRQ_OFFSET and isValidIrq(i - IRQ_OFFSET)) {

@@ -103,7 +103,7 @@ pub fn map(pml4: *Pml4Table, virt: usize, phys: usize, flags: u64) !void {
     }
     
     const pdpt_addr = pml4.entries[pml4_idx] & ENTRY_ADDR_MASK;
-    const pdpt = @intToPtr(*PdptTable, pdpt_addr);
+    const pdpt = @ptrFromInt(*PdptTable, pdpt_addr);
     
     // Check if PDPT entry exists
     if ((pdpt.entries[pdpt_idx] & ENTRY_PRESENT) == 0) {
@@ -111,7 +111,7 @@ pub fn map(pml4: *Pml4Table, virt: usize, phys: usize, flags: u64) !void {
     }
     
     const pd_addr = pdpt.entries[pdpt_idx] & ENTRY_ADDR_MASK;
-    const pd = @intToPtr(*PdTable, pd_addr);
+    const pd = @ptrFromInt(*PdTable, pd_addr);
     
     // Check if PD entry exists
     if ((pd.entries[pd_idx] & ENTRY_PRESENT) == 0) {
@@ -119,7 +119,7 @@ pub fn map(pml4: *Pml4Table, virt: usize, phys: usize, flags: u64) !void {
     }
     
     const pt_addr = pd.entries[pd_idx] & ENTRY_ADDR_MASK;
-    const pt = @intToPtr(*PtTable, pt_addr);
+    const pt = @ptrFromInt(*PtTable, pt_addr);
     
     // Set up the page table entry
     pt.entries[pt_idx] = (phys & ENTRY_ADDR_MASK) | flags | ENTRY_PRESENT;
@@ -140,21 +140,21 @@ pub fn unmap(pml4: *Pml4Table, virt: usize) !void {
     }
     
     const pdpt_addr = pml4.entries[pml4_idx] & ENTRY_ADDR_MASK;
-    const pdpt = @intToPtr(*PdptTable, pdpt_addr);
+    const pdpt = @ptrFromInt(*PdptTable, pdpt_addr);
     
     if ((pdpt.entries[pdpt_idx] & ENTRY_PRESENT) == 0) {
         return error.NotMapped;
     }
     
     const pd_addr = pdpt.entries[pdpt_idx] & ENTRY_ADDR_MASK;
-    const pd = @intToPtr(*PdTable, pd_addr);
+    const pd = @ptrFromInt(*PdTable, pd_addr);
     
     if ((pd.entries[pd_idx] & ENTRY_PRESENT) == 0) {
         return error.NotMapped;
     }
     
     const pt_addr = pd.entries[pd_idx] & ENTRY_ADDR_MASK;
-    const pt = @intToPtr(*PtTable, pt_addr);
+    const pt = @ptrFromInt(*PtTable, pt_addr);
     
     pt.entries[pt_idx] = 0;
     flushTlb(virt);
@@ -191,7 +191,7 @@ pub fn init(mem_profile: *const MemProfile) void {
     // This is a simplified setup - full implementation would map all physical memory
     
     // Load the kernel PML4
-    const pml4_phys = mem.virtToPhys(@ptrToInt(&kernel_pml4));
+    const pml4_phys = mem.virtToPhys(@intFromPtr(&kernel_pml4));
     loadCr3(pml4_phys);
 }
 
