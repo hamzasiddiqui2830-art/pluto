@@ -7,10 +7,11 @@ on:
 
 jobs:
   test:
-    name: Build mode ${{ matrix.build_mode }}
+    name: ${{ matrix.arch }} - Build mode ${{ matrix.build_mode }}
     runs-on: ubuntu-20.04
     strategy:
       matrix:
+        arch: [x86, x86_64]
         build_mode: ["", -Drelease-fast, -Drelease-safe, -Drelease-small]
 
     steps:
@@ -29,14 +30,18 @@ jobs:
     - name: Check formatting
       run: zig*/zig fmt --check src
     - name: Build kernel
-      run: zig*/zig build ${{ matrix.build_mode }}
+      run: zig*/zig build ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
     - name: Run unit tests
-      run: zig*/zig build test ${{ matrix.build_mode }}
+      run: zig*/zig build test ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
     - name: Run runtime test - Initialisation
+      if: matrix.arch == 'x86'
       run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Initialisation ${{ matrix.build_mode }}
     - name: Run runtime test - Panic
+      if: matrix.arch == 'x86'
       run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Panic ${{ matrix.build_mode }}
     - name: Run runtime test - Scheduler
+      if: matrix.arch == 'x86'
       run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Scheduler ${{ matrix.build_mode }}
     - name: Run runtime test - Memory
+      if: matrix.arch == 'x86'
       run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Memory ${{ matrix.build_mode }}
