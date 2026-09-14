@@ -3,40 +3,69 @@ name: CI
 on:
   push:
   pull_request:
-    branches: '*'
+    branches: ["*"]
 
 jobs:
   test:
     name: ${{ matrix.os }} - ${{ matrix.arch }} - Build mode ${{ matrix.build_mode }}
     runs-on: ${{ matrix.os }}
+
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest]
         arch: [x86, x86_64]
-        build_mode: ["", -Drelease-fast, -Drelease-safe, -Drelease-small]
+        build_mode:
+          - ""
+          - -Drelease-fast
+          - -Drelease-safe
+          - -Drelease-small
 
     steps:
-    - uses: actions/checkout@v1
-    
-    - name: Download zig (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |
-        Invoke-WebRequest -Uri "https://ziglang.org/download/0.16.0/zig-x86_64-windows-0.16.0.zip" -OutFile "zig.zip"
-        Expand-Archive -Path zig.zip -DestinationPath .
-        Rename-Item -Path "zig-x86_64-windows-0.16.0" -NewName "zig"
-    
-    - name: Check formatting (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: zig/zig.exe fmt --check src
-    
-    - name: Build kernel (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: zig/zig.exe build ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
-    
-    - name: Run unit tests (Windows)
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: zig/zig.exe build test ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Zig 0.16.0
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $zigVersion = "0.16.0"
+          $zigArchive = "zig-x86_64-windows-$zigVersion.zip"
+          $zigUrl = "https://ziglang.org/download/$zigVersion/$zigArchive"
+
+          Invoke-WebRequest `
+            -Uri $zigUrl `
+            -OutFile "zig.zip"
+
+          Expand-Archive `
+            -Path "zig.zip" `
+            -DestinationPath "."
+
+          Rename-Item `
+            -Path $zigArchive.Replace(".zip", "") `
+            -NewName "zig"
+
+          & ".\zig\zig.exe" version
+
+      - name: Check formatting
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & ".\zig\zig.exe" fmt --check src
+
+      - name: Build kernel
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & ".\zig\zig.exe" build ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
+
+      - name: Run unit tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          & ".\zig\zig.exe" build test ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
