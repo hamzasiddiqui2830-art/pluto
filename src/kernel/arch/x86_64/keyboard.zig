@@ -80,7 +80,7 @@ const scancode_to_ascii: [59]u8 = .{
     '\'', // 0x28
     '`', // 0x29
     0,   // 0x2A Shift
-    '\', // 0x2B
+    '\\', // 0x2B
     'z', // 0x2C
     'x', // 0x2D
     'c', // 0x2E

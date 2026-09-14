@@ -217,7 +217,7 @@ pub const Task = struct {
     ///
     pub fn addVFSHandle(self: *Self, node: *vfs.Node) std.mem.Allocator.Error!?Handle {
         if (self.file_handles.setFirstFree()) |handle| {
-            const real_handle = @intCast(Handle, handle);
+            const real_handle = @intCast(handle, Handle);
             try self.file_handle_mapping.put(real_handle, node);
             return real_handle;
         }

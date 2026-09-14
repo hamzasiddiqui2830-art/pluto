@@ -1656,7 +1656,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
                 }
 
                 // Valid character
-                try utf16_buff.append(@intCast(u16, code_point));
+                try utf16_buff.append(@intCast(code_point, u16));
             }
 
             // Remove trailing spaces and dots
@@ -1702,7 +1702,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
                 }
             }
 
-            return @intCast(u8, char);
+            return @intCast(char, u8);
         }
 
         ///
@@ -1887,7 +1887,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
         ///
         fn createLongNameEntry(allocator: Allocator, long_name: []const u16, check_sum: u8) Allocator.Error![]LongName {
             // Calculate the number of long entries (round up). LFN are each 13 characters long
-            const num_lfn_entries = @intCast(u8, (long_name.len + 12) / 13);
+            const num_lfn_entries = @intCast((long_name.len + 12, u8) / 13);
 
             // Create the long entries
             var lfn_array = try allocator.alloc(LongName, num_lfn_entries);
@@ -1947,14 +1947,14 @@ pub fn Fat32FS(comptime StreamType: type) type {
         fn createShortNameEntry(name: [11]u8, attributes: ShortName.Attributes, cluster: u32) ShortName {
             const date_time = arch.getDateTime();
 
-            const date = @intCast(u16, date_time.day | date_time.month << 5 | (date_time.year - 1980) << 9);
-            const time = @intCast(u16, date_time.second / 2 | date_time.minute << 5 | date_time.hour << 11);
+            const date = @intCast(date_time.day | date_time.month << 5 | (date_time.year - 1980, u16) << 9);
+            const time = @intCast(date_time.second / 2 | date_time.minute << 5 | date_time.hour << 11, u16);
 
             return .{
                 .name = name[0..8].*,
                 .extension = name[8..11].*,
                 .attributes = @enumToInt(attributes),
-                .time_created_tenth = @intCast(u8, (date_time.second % 2) * 100),
+                .time_created_tenth = @intCast((date_time.second % 2, u8) * 100),
                 .time_created = time,
                 .date_created = date,
                 .date_last_access = date,
@@ -5096,7 +5096,7 @@ test "Fat32FS.createLongNameEntry - max 255 characters" {
     }} ** 20;
 
     for (expected) |*e, i| {
-        e.order = 20 - @intCast(u8, i);
+        e.order = 20 - @intCast(i, u8);
     }
     expected[0] = LongName{
         .order = 0x54, // 0x40 | 0x14

@@ -223,8 +223,8 @@ pub fn lgdt(gdt_ptr: *const gdt.GdtPtr) void {
 
     // Load the kernel code segment into the CS register
     asm volatile (
-        \ljmp $0x08, $1f
-        \1:
+        \\ljmp $0x08, $1f
+        \\1:
     );
 }
 
@@ -412,9 +412,9 @@ pub fn initMem(mb_info: BootPayload) Allocator.Error!MemProfile {
     for (mem_map) |entry| {
         if (entry.@"type" != multiboot.MULTIBOOT_MEMORY_AVAILABLE) {
             // If addr + len is greater than maxInt(usize) just ignore whatever comes after maxInt(usize) since it can't be addressed anyway
-            const end: usize = if (entry.addr > std.math.maxInt(usize) - entry.len) std.math.maxInt(usize) else @intCast(usize, entry.addr + entry.len);
+            const end: usize = if (entry.addr > std.math.maxInt(usize) - entry.len) std.math.maxInt(usize) else @intCast(entry.addr + entry.len, usize);
             try reserved_physical_mem.append(.{
-                .start = @intCast(usize, entry.addr),
+                .start = @intCast(entry.addr, usize),
                 .end = end,
             });
         }

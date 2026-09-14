@@ -133,8 +133,8 @@ const PciDevice = struct {
         const result = arch.in(u32, CONFIG_DATA);
         // Return the size the user wants
         const shift = switch (pci_reg.getWidth()) {
-            u8 => (@intCast(u5, address.register_offset & 0x3)) * 8,
-            u16 => (@intCast(u5, address.register_offset & 0x2)) * 8,
+            u8 => (@intCast(address.register_offset & 0x3, u5)) * 8,
+            u16 => (@intCast(address.register_offset & 0x2, u5)) * 8,
             u32 => 0,
             else => @compileError("Invalid read size. Only u8, u16 and u32 allowed."),
         };
@@ -332,10 +332,10 @@ pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
     // Iterate through all the possible devices
     var _bus: u32 = 0;
     while (_bus < 8) : (_bus += 1) {
-        const bus = @intCast(u8, _bus);
+        const bus = @intCast(_bus, u8);
         var _device: u32 = 0;
         while (_device < 32) : (_device += 1) {
-            const device = @intCast(u5, _device);
+            const device = @intCast(_device, u5);
             // Devices have at least 1 function
             const pci_device = PciDevice{
                 .bus = bus,
@@ -344,7 +344,7 @@ pub fn getDevices(allocator: Allocator) Allocator.Error![]PciDeviceInfo {
             var num_functions: u32 = if (pci_device.configReadData(0, .HeaderType) & 0x80 != 0) 8 else 1;
             var _function: u32 = 0;
             while (_function < num_functions) : (_function += 1) {
-                const function = @intCast(u3, _function);
+                const function = @intCast(_function, u3);
                 const device_info = PciDeviceInfo.create(pci_device, function) catch |e| switch (e) {
                     error.NoFunction => continue,
                 };

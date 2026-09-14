@@ -528,7 +528,7 @@ pub fn testInitData(allocator: std.mem.Allocator, section_name: []const u8, stri
     data_offset += s_header_size;
 
     var string_section_header = SectionHeader{
-        .name_offset = @intCast(u32, section_name.len) + 1,
+        .name_offset = @intCast(section_name.len, u32) + 1,
         .section_type = .StringTable,
         .flags = strings_flags,
         .virtual_address = strings_address,

@@ -113,7 +113,7 @@ pub fn registerSyscall(syscall: usize, handler: Handler) Error!void {
 ///
 inline fn syscall0(syscall: usize) anyerror!usize {
     const res = asm volatile (
-        \int $0x80
+        \\int $0x80
         : [ret] "={eax}" (-> usize),
         : [syscall] "{eax}" (syscall),
         : "ebx"
@@ -142,7 +142,7 @@ inline fn syscall0(syscall: usize) anyerror!usize {
 ///
 inline fn syscall1(syscall: usize, arg: usize) anyerror!usize {
     const res = asm volatile (
-        \int $0x80
+        \\int $0x80
         : [ret] "={eax}" (-> usize),
         : [syscall] "{eax}" (syscall),
           [arg1] "{ebx}" (arg),
@@ -172,7 +172,7 @@ inline fn syscall1(syscall: usize, arg: usize) anyerror!usize {
 ///
 inline fn syscall2(syscall: usize, arg1: usize, arg2: usize) anyerror!usize {
     const res = asm volatile (
-        \int $0x80
+        \\int $0x80
         : [ret] "={eax}" (-> usize),
         : [syscall] "{eax}" (syscall),
           [arg1] "{ebx}" (arg1),
@@ -204,7 +204,7 @@ inline fn syscall2(syscall: usize, arg1: usize, arg2: usize) anyerror!usize {
 ///
 inline fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) anyerror!usize {
     const res = asm volatile (
-        \int $0x80
+        \\int $0x80
         : [ret] "={eax}" (-> usize),
         : [syscall] "{eax}" (syscall),
           [arg1] "{ebx}" (arg1),
@@ -238,7 +238,7 @@ inline fn syscall3(syscall: usize, arg1: usize, arg2: usize, arg3: usize) anyerr
 ///
 inline fn syscall4(syscall: usize, arg1: usize, arg2: usize, arg3: usize, arg4: usize) anyerror!usize {
     const res = asm volatile (
-        \int $0x80
+        \\int $0x80
         : [ret] "={eax}" (-> usize),
         : [syscall] "{eax}" (syscall),
           [arg1] "{ebx}" (arg1),
@@ -274,7 +274,7 @@ inline fn syscall4(syscall: usize, arg1: usize, arg2: usize, arg3: usize, arg4: 
 ///
 inline fn syscall5(syscall: usize, arg1: usize, arg2: usize, arg3: usize, arg4: usize, arg5: usize) anyerror!usize {
     const res = asm volatile (
-        \int $0x80
+        \\int $0x80
         : [ret] "={eax}" (-> usize),
         : [syscall] "{eax}" (syscall),
           [arg1] "{ebx}" (arg1),

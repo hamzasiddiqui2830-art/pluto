@@ -58,9 +58,9 @@ fn lcrValue(char_len: u8, stop_bit: bool, parity_bit: bool, msb: u1) SerialError
         return SerialError.InvalidCharacterLength;
     // Set the msb and OR in all arguments passed
     const val = char_len & 0x3 |
-        @intCast(u8, @boolToInt(stop_bit)) << 2 |
-        @intCast(u8, @boolToInt(parity_bit)) << 3 |
-        @intCast(u8, msb) << 7;
+        @intCast(@boolToInt(stop_bit, u8)) << 2 |
+        @intCast(@boolToInt(parity_bit, u8)) << 3 |
+        @intCast(msb, u8) << 7;
     return val;
 }
 
@@ -150,7 +150,7 @@ test "lcrValue computes the correct value" {
                     const expected = char_len & 0x3 |
                         @boolToInt(stop_bit) << 2 |
                         @boolToInt(parity_bit) << 3 |
-                        @intCast(u8, msb) << 7;
+                        @intCast(msb, u8) << 7;
                     try testing.expectEqual(val, expected);
                 }
             }

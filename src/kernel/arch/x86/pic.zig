@@ -408,7 +408,7 @@ pub fn spuriousIrq(irq_num: u8) bool {
 ///
 pub fn setMask(irq_num: u8) void {
     const port: u16 = if (irq_num < 8) MASTER_DATA_REG else SLAVE_DATA_REG;
-    const shift = @intCast(u3, irq_num % 8);
+    const shift = @intCast(irq_num % 8, u3);
     const value: u8 = arch.in(u8, port) | (@as(u8, 1) << shift);
     arch.out(port, value);
 }
@@ -421,7 +421,7 @@ pub fn setMask(irq_num: u8) void {
 ///
 pub fn clearMask(irq_num: u8) void {
     const port: u16 = if (irq_num < 8) MASTER_DATA_REG else SLAVE_DATA_REG;
-    const shift = @intCast(u3, irq_num % 8);
+    const shift = @intCast(irq_num % 8, u3);
     const value: u8 = arch.in(u8, port) & ~(@as(u8, 1) << shift);
     arch.out(port, value);
 }

@@ -677,8 +677,8 @@ fn rt_accessUnmappedMem(v_end: u32) void {
     log.err("FAILURE: Value: {}\n", .{value});
     // This is the label that we return to after processing the page fault
     asm volatile (
-        \.global rt_fault_callback
-        \rt_fault_callback:
+        \\.global rt_fault_callback
+        \\rt_fault_callback:
     );
     if (!faulted) {
         panic(@errorReturnTrace(), "FAILURE: Paging should have faulted\n", .{});
@@ -694,8 +694,8 @@ fn rt_accessMappedMem(v_end: u32) void {
     // Print the value to avoid the load from being optimised away
     log.info("Read value in mapped memory: {}\n", .{ptr.*});
     asm volatile (
-        \.global rt_fault_callback2
-        \rt_fault_callback2:
+        \\.global rt_fault_callback2
+        \\rt_fault_callback2:
     );
     if (faulted) {
         panic(@errorReturnTrace(), "FAILURE: Paging shouldn't have faulted\n", .{});

@@ -601,7 +601,7 @@ fn setVideoBufferBlankPages() !void {
 fn setVideoBufferIncrementingBlankPages() !void {
     try setUpVideoBuffer();
     for (video_buffer) |*b, i| {
-        b.* = @intCast(u16, i);
+        b.* = @intCast(i, u16);
     }
 
     setPagesBlank();
@@ -618,7 +618,7 @@ fn setPagesBlank() void {
 fn setPagesIncrementing() void {
     for (pages) |*p_i, i| {
         for (p_i) |*p_j, j| {
-            p_j.* = @intCast(u16, i) * TOTAL_CHAR_ON_PAGE + @intCast(u16, j);
+            p_j.* = @intCast(i, u16) * TOTAL_CHAR_ON_PAGE + @intCast(j, u16);
         }
     }
 }

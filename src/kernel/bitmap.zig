@@ -171,7 +171,7 @@ pub fn Bitmap(comptime num_entries: ?usize, comptime BitmapType: type) type {
         ///     The bit corresponding to that index but within a single BitmapType.
         ///
         fn indexToBit(idx: usize) BitmapType {
-            return @as(BitmapType, 1) << @intCast(IndexType, idx % ENTRIES_PER_BITMAP);
+            return @as(BitmapType, 1) << @intCast(idx % ENTRIES_PER_BITMAP, IndexType);
         }
 
         ///
@@ -267,7 +267,7 @@ pub fn Bitmap(comptime num_entries: ?usize, comptime BitmapType: type) type {
                 if (bmp.* == BITMAP_FULL) {
                     continue;
                 }
-                const bit = @truncate(@ctz(BitmapType, ~bmp.*));
+                const bit = @truncate(~bmp.*));
                 const idx = bit + i * ENTRIES_PER_BITMAP;
                 // Failing here means that the index is outside of the bitmap, so there are no free entries
                 self.setEntry(idx) catch return null;

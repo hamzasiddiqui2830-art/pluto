@@ -21,7 +21,7 @@ pub fn registerHandler(syscall_num: u64, handler: SyscallHandler) !void {
 
 /// Default syscall handler (returns error).
 fn defaultHandler(_: u64, _: u64, _: u64, _: u64, _: u64, _: u64) callconv(.C) u64 {
-    return @intCast(u64, -1); // Error
+    return @intCast(-1, u64); // Error
 }
 
 /// Initialize syscall subsystem.
@@ -52,9 +52,12 @@ fn setupSyscallMsrs() void {
 
 /// Write to Model Specific Register.
 fn wrmsr(msr: u32, value: u64) void {
-    const low = @truncate("{eax}" (low),
+    var low: u32 = undefined;
+    var high: u32 = undefined;
+    asm volatile ("wrmsr"
+        : "{eax}" (low),
           "{edx}" (high),
-        : "memory"
+        : "{ecx}" (msr),
     );
 }
 
