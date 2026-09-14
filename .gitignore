@@ -1,17 +1,32 @@
-# Binaries
-**/*.elf
-**/*.bin
-**/*.o
-**/*.iso
+```
+# Build artifacts
+zig-cache/
+zig-out/
+*.o
+*.obj
+*.bin
+*.elf
 
-# Zig ignore
-**/zig-cache/
-**/zig-out/
-**/build/
-**/build-*/
-**/docgen_tmp/
+# Dependencies
+zig*/
+deps/
 
-# Custom ignore
-**/mock_framework.zig
-**/*.ramdisk
-**/*.img
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+```

@@ -21,10 +21,17 @@ const x86_i686 = CrossTarget{
     .cpu_model = .{ .explicit = &Target.x86.cpu._i686 },
 };
 
+const x86_64 = CrossTarget{
+    .cpu_arch = .x86_64,
+    .os_tag = .freestanding,
+    .cpu_model = .{ .explicit = &Target.x86.cpu.x86_64 },
+};
+
 pub fn build(b: *Builder) !void {
-    const target = b.standardTargetOptions(.{ .whitelist = &[_]CrossTarget{x86_i686}, .default_target = x86_i686 });
+    const target = b.standardTargetOptions(.{ .whitelist = &[_]CrossTarget{ x86_i686, x86_64 }, .default_target = x86_i686 });
     const arch = switch (target.getCpuArch()) {
         .i386 => "x86",
+        .x86_64 => "x86_64",
         else => unreachable,
     };
 
@@ -70,6 +77,7 @@ pub fn build(b: *Builder) !void {
 
     const make_iso = switch (target.getCpuArch()) {
         .i386 => b.addSystemCommand(&[_][]const u8{ "./makeiso.sh", boot_path, modules_path, iso_dir_path, exec_output_path, ramdisk_path, output_iso }),
+        .x86_64 => b.addSystemCommand(&[_][]const u8{ "./makeiso.sh", boot_path, modules_path, iso_dir_path, exec_output_path, ramdisk_path, output_iso }),
         else => unreachable,
     };
     make_iso.step.dependOn(&exec.step);
@@ -138,12 +146,13 @@ pub fn build(b: *Builder) !void {
 
     switch (target.getCpuArch()) {
         .i386 => try qemu_args_al.append("qemu-system-i386"),
+        .x86_64 => try qemu_args_al.append("qemu-system-x86_64"),
         else => unreachable,
     }
     try qemu_args_al.append("-serial");
     try qemu_args_al.append("stdio");
     switch (target.getCpuArch()) {
-        .i386 => {
+        .i386, .x86_64 => {
             try qemu_args_al.append("-boot");
             try qemu_args_al.append("d");
             try qemu_args_al.append("-cdrom");
