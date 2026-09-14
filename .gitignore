@@ -1,10 +1,69 @@
-```yaml
-# GitHub workflow artifacts
-.github/workflows/main.yml
 ```
+# CI/CD
+.github/
 
-Wait, I need to reconsider this. The file `.github/workflows/main.yml` is a source/config file that was modified, not a build artifact or temporary file. According to rule 6, if the changes contain only source or config files, I should output an empty .gitignore.
+# Logs and temp files
+*.log
+*.tmp
 
-Since only `.github/workflows/main.yml` was modified (which is a config file), and there are no build artifacts, dependencies, or temp files in the changes, the output should be empty.
+# Environment
+.env
+.env.local
+.env.*
 
-(empty)
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+dist/
+build/
+target/
+.gradle/
+
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.pyc
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+```

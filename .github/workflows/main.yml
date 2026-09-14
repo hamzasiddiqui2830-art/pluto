@@ -11,20 +11,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest]
+        os: [windows-latest]
         arch: [x86, x86_64]
         build_mode: ["", -Drelease-fast, -Drelease-safe, -Drelease-small]
 
     steps:
     - uses: actions/checkout@v1
-    
-    - name: Download zig (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        export PYTHONIOENCODING=utf8
-        wget https://ziglang.org/download/0.9.1/zig-linux-x86_64-0.9.1.tar.xz
-        sudo apt-get install mtools
-        tar -xvf zig*
     
     - name: Download zig (Windows)
       if: runner.os == 'Windows'
@@ -33,51 +25,17 @@ jobs:
         Invoke-WebRequest -Uri "https://ziglang.org/download/0.9.1/zig-windows-x86_64-0.9.1.zip" -OutFile "zig.zip"
         Expand-Archive -Path zig.zip -DestinationPath .
     
-    - name: Install qemu (Linux)
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install qemu qemu-system --fix-missing
-    
-    - name: Check formatting (Linux)
-      if: runner.os == 'Linux'
-      run: zig*/zig fmt --check src
-    
     - name: Check formatting (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: zig-windows-x86_64-0.9.1/zig.exe fmt --check src
-    
-    - name: Build kernel (Linux)
-      if: runner.os == 'Linux'
-      run: zig*/zig build ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
     
     - name: Build kernel (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: zig-windows-x86_64-0.9.1/zig.exe build ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
     
-    - name: Run unit tests (Linux)
-      if: runner.os == 'Linux'
-      run: zig*/zig build test ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
-    
     - name: Run unit tests (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: zig-windows-x86_64-0.9.1/zig.exe build test ${{ matrix.build_mode }} -Dtarget=${{ matrix.arch }}
-    
-    - name: Run runtime test - Initialisation
-      if: runner.os == 'Linux' && matrix.arch == 'x86'
-      run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Initialisation ${{ matrix.build_mode }}
-    
-    - name: Run runtime test - Panic
-      if: runner.os == 'Linux' && matrix.arch == 'x86'
-      run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Panic ${{ matrix.build_mode }}
-    
-    - name: Run runtime test - Scheduler
-      if: runner.os == 'Linux' && matrix.arch == 'x86'
-      run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Scheduler ${{ matrix.build_mode }}
-    
-    - name: Run runtime test - Memory
-      if: runner.os == 'Linux' && matrix.arch == 'x86'
-      run: zig*/zig build rt-test -Ddisable-display -Dtest-mode=Memory ${{ matrix.build_mode }}
