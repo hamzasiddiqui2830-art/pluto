@@ -25,34 +25,34 @@ export fn handler(ctx: *arch.CpuState) usize {
 ///
 /// The common assembly that all exceptions and interrupts will call.
 ///
-export fn commonStub() callconv(.Naked) void {
+export fn commonStub() linksection(".text") void {
     asm volatile (
-        \\pusha
-        \\push  %%ds
-        \\push  %%es
-        \\push  %%fs
-        \\push  %%gs
-        \\mov %%cr3, %%eax
-        \\push %%eax
-        \\mov   $0x10, %%ax
-        \\mov   %%ax, %%ds
-        \\mov   %%ax, %%es
-        \\mov   %%ax, %%fs
-        \\mov   %%ax, %%gs
-        \\mov   %%esp, %%eax
-        \\push  %%eax
-        \\call  handler
-        \\mov   %%eax, %%esp
+        \\ pusha
+        \\ push
+        \\ push
+        \\ push
+        \\ push
+        \\ mov
+        \\ push
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ mov
+        \\ push
+        \\ call
+        \\ mov
     );
 
     // Pop off the new cr3 then check if it's the same as the previous cr3
     // If so don't change cr3 to avoid a TLB flush
     asm volatile (
-        \\pop   %%eax
-        \\mov   %%cr3, %%ebx
-        \\cmp   %%eax, %%ebx
-        \\je    same_cr3
-        \\mov   %%eax, %%cr3
+        \\ pop
+        \\ mov
+        \\ cmp
+        \\ je
+        \\ mov
         \\same_cr3:
         \\pop   %%gs
         \\pop   %%fs
@@ -63,11 +63,11 @@ export fn commonStub() callconv(.Naked) void {
     // The Tss.esp0 value is the stack pointer used when an interrupt occurs. This should be the current process' stack pointer
     // So skip the rest of the CpuState, set Tss.esp0 then un-skip the last few fields of the CpuState
     asm volatile (
-        \\add   $0x1C, %%esp
+        \\ add
         \\.extern main_tss_entry
-        \\mov   %%esp, (main_tss_entry + 4)
-        \\sub   $0x14, %%esp
-        \\iret
+        \\ mov
+        \\ sub
+        \\ iret
     );
 }
 
@@ -83,7 +83,7 @@ export fn commonStub() callconv(.Naked) void {
 ///
 pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
     return struct {
-        fn func() callconv(.Naked) void {
+        fn func() linksection(".text") void {
             asm volatile (
                 \\ cli
             );
@@ -96,10 +96,9 @@ pub fn getInterruptStub(comptime interrupt_num: u32) idt.InterruptHandler {
             }
 
             asm volatile (
-                \\ pushl %[nr]
-                \\ jmp commonStub
+                \\ pushl
                 :
-                : [nr] "n" (interrupt_num),
+                : [nr] "n" (interrupt_num)
             );
         }
     }.func;

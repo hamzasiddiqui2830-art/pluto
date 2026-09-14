@@ -46,13 +46,13 @@ pub const CodePage = struct {
     pub fn toCodePage(code_page: CodePages, char: u16) Error!u8 {
         // Optimisation for ascii
         if (char >= 0x20 and char < 0x7F) {
-            return @intCast(u8, char);
+            return @intCast(char, u8);
         }
 
         // Find the code point and then return the index
-        for (getTable(code_page)) |code_point, i| {
+        for (getTable(code_page), 0..) |code_point, i| {
             if (code_point == char) {
-                return @intCast(u8, i);
+                return @intCast(i, u8);
             }
         }
         return Error.InvalidChar;
@@ -92,6 +92,6 @@ test "ASCII toWideChar" {
 }
 
 test "Invalid characters" {
-    const char = '€';
+    const char = '\u{20AC}';  // Euro sign in Unicode
     try std.testing.expectError(CodePage.Error.InvalidChar, CodePage.toCodePage(.CP437, char));
 }

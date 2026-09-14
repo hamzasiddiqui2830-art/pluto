@@ -21,13 +21,13 @@ pub fn registerHandler(syscall_num: u64, handler: SyscallHandler) !void {
 
 /// Default syscall handler (returns error).
 fn defaultHandler(_: u64, _: u64, _: u64, _: u64, _: u64, _: u64) callconv(.C) u64 {
-    return @intCast(u64, -1); // Error
+    return @intCast(-1, u64); // Error
 }
 
 /// Initialize syscall subsystem.
 pub fn init() void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Set up syscall/sysret MSRs for fast system calls
     setupSyscallMsrs();
@@ -43,7 +43,7 @@ fn setupSyscallMsrs() void {
     wrmsr(STAR_MSR, 0);
     
     // Write the address of our syscall handler to LSTAR
-    const handler_addr = @ptrToInt(syscallEntry);
+    const handler_addr = @intFromPtr(syscallEntry);
     wrmsr(LSTAR_MSR, handler_addr);
     
     // Set SFMASK to mask interrupts during syscall
@@ -52,14 +52,13 @@ fn setupSyscallMsrs() void {
 
 /// Write to Model Specific Register.
 fn wrmsr(msr: u32, value: u64) void {
-    const low = @truncate(u32, value);
-    const high = @truncate(u32, value >> 32);
+    const low = @as(u32, @truncate(value));
+    const high = @as(u32, @truncate(value >> 32));
     asm volatile ("wrmsr"
         :
         : "{ecx}" (msr),
           "{eax}" (low),
-          "{edx}" (high),
-        : "memory"
+          "{edx}" (high)
     );
 }
 

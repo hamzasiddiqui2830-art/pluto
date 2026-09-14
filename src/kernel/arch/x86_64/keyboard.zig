@@ -115,8 +115,8 @@ fn readByte() ?u8 {
 
 /// Initialize the PS/2 keyboard.
 pub fn init(allocator: Allocator) Allocator.Error!*Keyboard {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Disable keyboard temporarily
     arch.out(PS2_COMMAND_PORT, PS2_CMD_DISABLE_FIRST_PORT);

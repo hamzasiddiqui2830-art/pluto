@@ -143,7 +143,7 @@ export fn isrHandler(ctx: *arch.CpuState) usize {
     // Get the interrupt number
     const isr_num = ctx.int_num;
 
-    var ret_esp = @ptrToInt(ctx);
+    var ret_esp = @intFromPtr(ctx);
 
     if (isValidIsr(isr_num)) {
         if (isr_num == syscalls.INTERRUPT) {
@@ -253,7 +253,7 @@ pub fn init() void {
     }
 }
 
-fn testFunction0() callconv(.Naked) void {}
+fn testFunction0() linksection(".text") void {}
 fn testFunction1(ctx: *arch.CpuState) u32 {
     // Suppress unused var warning
     _ = ctx;
@@ -339,7 +339,7 @@ test "registerIsr re-register isr handler" {
     try expectError(IsrError.IsrExists, registerIsr(0, testFunction2));
 
     // Post testing
-    for (isr_handlers) |h, i| {
+    for (isr_handlers, 0..) |h, i| {
         if (i != 0) {
             try expect(null == h);
         } else {
@@ -361,7 +361,7 @@ test "registerIsr register isr handler" {
     try registerIsr(0, testFunction1);
 
     // Post testing
-    for (isr_handlers) |h, i| {
+    for (isr_handlers, 0..) |h, i| {
         if (i != 0) {
             try expect(null == h);
         } else {
@@ -382,7 +382,7 @@ test "registerIsr invalid isr index" {
 ///
 fn rt_unregisteredHandlers() void {
     // Ensure all ISR are not registered yet
-    for (isr_handlers) |h, i| {
+    for (isr_handlers, 0..) |h, i| {
         if (h) |_| {
             panic(@errorReturnTrace(), "FAILURE: Handler found for ISR: {}-{}\n", .{ i, h });
         }
@@ -400,9 +400,9 @@ fn rt_unregisteredHandlers() void {
 ///
 fn rt_openedIdtEntries() void {
     const loaded_idt = arch.sidt();
-    const idt_entries = @intToPtr([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
+    const idt_entries = @ptrFromInt([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
 
-    for (idt_entries) |entry, i| {
+    for (idt_entries, 0..) |entry, i| {
         if (isValidIsr(i)) {
             if (!idt.isIdtOpen(entry)) {
                 panic(@errorReturnTrace(), "FAILURE: IDT entry for {} is not open\n", .{i});

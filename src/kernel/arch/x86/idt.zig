@@ -47,7 +47,7 @@ pub const IdtPtr = packed struct {
     base: u32,
 };
 
-pub const InterruptHandler = fn () callconv(.Naked) void;
+pub const InterruptHandler = fn () linksection(".text") void;
 
 /// The error set for the IDT
 pub const IdtError = error{
@@ -128,7 +128,7 @@ var idt_entries: [NUMBER_OF_ENTRIES]IdtEntry = [_]IdtEntry{IdtEntry{
 ///
 fn makeEntry(base: u32, selector: u16, gate_type: u4, privilege: u2) IdtEntry {
     return IdtEntry{
-        .base_low = @truncate(u16, base),
+        .base_low = @truncate(base),
         .selector = selector,
         .zero = 0,
         .gate_type = gate_type,
@@ -136,7 +136,7 @@ fn makeEntry(base: u32, selector: u16, gate_type: u4, privilege: u2) IdtEntry {
         .privilege = privilege,
         // Creating a new entry, so is now present.
         .present = 1,
-        .base_high = @truncate(u16, base >> 16),
+        .base_high = @truncate(base >> 16),
     };
 }
 
@@ -171,7 +171,7 @@ pub fn openInterruptGate(index: u8, handler: InterruptHandler) IdtError!void {
         return IdtError.IdtEntryExists;
     }
 
-    idt_entries[index] = makeEntry(@ptrToInt(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0);
+    idt_entries[index] = makeEntry(@intFromPtr(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0);
 }
 
 ///
@@ -181,7 +181,7 @@ pub fn init() void {
     log.info("Init\n", .{});
     defer log.info("Done\n", .{});
 
-    idt_ptr.base = @ptrToInt(&idt_entries);
+    idt_ptr.base = @intFromPtr(&idt_entries);
 
     arch.lidt(&idt_ptr);
 
@@ -191,12 +191,12 @@ pub fn init() void {
     }
 }
 
-fn testHandler0() callconv(.Naked) void {}
-fn testHandler1() callconv(.Naked) void {}
+fn testHandler0() linksection(".text") void {}
+fn testHandler1() linksection(".text") void {}
 
 fn mock_lidt(ptr: *const IdtPtr) void {
     expectEqual(TABLE_SIZE, ptr.limit) catch panic(null, "IDT pointer limit was not correct", .{});
-    expectEqual(@ptrToInt(&idt_entries[0]), ptr.base) catch panic(null, "IDT pointer base was not correct", .{});
+    expectEqual(@intFromPtr(&idt_entries[0]), ptr.base) catch panic(null, "IDT pointer base was not correct", .{});
 }
 
 test "IDT entries" {
@@ -246,17 +246,17 @@ test "openInterruptGate" {
     openInterruptGate(index, testHandler0) catch unreachable;
     try expectError(IdtError.IdtEntryExists, openInterruptGate(index, testHandler0));
 
-    const test_fn_0_addr = @ptrToInt(testHandler0);
+    const test_fn_0_addr = @intFromPtr(testHandler0);
 
     const expected_entry0 = IdtEntry{
-        .base_low = @truncate(u16, test_fn_0_addr),
+        .base_low = @truncate(test_fn_0_addr),
         .selector = gdt.KERNEL_CODE_OFFSET,
         .zero = 0,
         .gate_type = INTERRUPT_GATE,
         .storage_segment = 0,
         .privilege = PRIVILEGE_RING_0,
         .present = 1,
-        .base_high = @truncate(u16, test_fn_0_addr >> 16),
+        .base_high = @truncate(test_fn_0_addr >> 16),
     };
 
     try expectEqual(expected_entry0, idt_entries[index]);
@@ -278,14 +278,14 @@ test "openInterruptGate" {
     try expectError(IdtError.IdtEntryExists, openInterruptGate(index, testHandler1));
 
     const expected_entry1 = IdtEntry{
-        .base_low = @truncate(u16, test_fn_0_addr),
+        .base_low = @truncate(test_fn_0_addr),
         .selector = gdt.KERNEL_CODE_OFFSET,
         .zero = 0,
         .gate_type = INTERRUPT_GATE,
         .storage_segment = 0,
         .privilege = PRIVILEGE_RING_0,
         .present = 1,
-        .base_high = @truncate(u16, test_fn_0_addr >> 16),
+        .base_high = @truncate(test_fn_0_addr >> 16),
     };
 
     try expectEqual(expected_entry1, idt_entries[index]);
@@ -314,7 +314,7 @@ test "init" {
     init();
 
     // Post testing
-    try expectEqual(@ptrToInt(&idt_entries), idt_ptr.base);
+    try expectEqual(@intFromPtr(&idt_entries), idt_ptr.base);
 
     // Reset
     idt_ptr.base = 0;

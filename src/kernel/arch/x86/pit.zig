@@ -235,7 +235,7 @@ inline fn sendDataToCounter(counter: CounterSelect, data: u8) void {
 ///
 fn pitHandler(ctx: *arch.CpuState) usize {
     ticks +%= 1;
-    return @ptrToInt(ctx);
+    return @intFromPtr(ctx);
 }
 
 ///
@@ -294,12 +294,12 @@ fn setupCounter(counter: CounterSelect, freq: u32, mode: u8) PitError!void {
 
     // Get the u16 version as this is what will be loaded into the PIT
     // If truncating 0x10000, this will equal 0, which is the slowest.
-    const reload_val_16 = @truncate(u16, reload_value);
+    const reload_val_16 = @truncate(reload_value);
 
     // Send the set up command to the PIT
     sendCommand(mode | OCW_READ_LOAD_DATA | counter.getCounterOCW());
-    sendDataToCounter(counter, @truncate(u8, reload_val_16));
-    sendDataToCounter(counter, @truncate(u8, reload_val_16 >> 8));
+    sendDataToCounter(counter, @truncate(reload_val_16));
+    sendDataToCounter(counter, @truncate(reload_val_16 >> 8));
 
     // Reset the counter ticks
     switch (counter) {
@@ -469,7 +469,7 @@ test "setupCounter normal frequency" {
     const mode = OCW_MODE_SQUARE_WAVE_GENERATOR | OCW_BINARY_COUNT_BINARY;
     const command = mode | OCW_READ_LOAD_DATA | counter.getCounterOCW();
 
-    arch.addTestParams("out", .{ COMMAND_REGISTER, command, port, @truncate(u8, expected_reload_value), port, @truncate(u8, expected_reload_value >> 8) });
+    arch.addTestParams("out", .{ COMMAND_REGISTER, command, port, @truncate(expected_reload_value), port, @truncate(expected_reload_value >> 8) });
 
     setupCounter(counter, freq, mode) catch unreachable;
 

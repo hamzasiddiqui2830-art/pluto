@@ -117,8 +117,8 @@ pub fn getDateTime() DateTime {
 
 /// Initialize RTC.
 pub fn init() void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Enable binary mode and 24-hour format
     const status_b = cmosRead(RTC_STATUS_B);

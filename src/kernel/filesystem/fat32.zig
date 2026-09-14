@@ -1648,7 +1648,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
                 }
 
                 // Check for invalid characters
-                const invalid_chars = "\"*/:<>?\\|";
+                const invalid_chars = "\"*/:<>?\|";
                 inline for (invalid_chars) |char| {
                     if (char == code_point) {
                         return Fat32Self.Error.InvalidName;
@@ -1656,7 +1656,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
                 }
 
                 // Valid character
-                try utf16_buff.append(@intCast(u16, code_point));
+                try utf16_buff.append(@intCast(code_point, u16));
             }
 
             // Remove trailing spaces and dots
@@ -1702,7 +1702,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
                 }
             }
 
-            return @intCast(u8, char);
+            return @intCast(char, u8);
         }
 
         ///
@@ -1743,7 +1743,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
             // Get the last dot in the string
             const last_dot_index = std.mem.lastIndexOf(u16, long_name[long_name_start..], &[_]u16{'.'});
 
-            for (long_name[long_name_start..]) |char, i| {
+            for (long_name[long_name_start..], 0..) |char, i| {
                 // Break when we reach the max of the short name or the last dot
                 if (char == '.') {
                     if (last_dot_index) |index| {
@@ -1887,7 +1887,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
         ///
         fn createLongNameEntry(allocator: Allocator, long_name: []const u16, check_sum: u8) Allocator.Error![]LongName {
             // Calculate the number of long entries (round up). LFN are each 13 characters long
-            const num_lfn_entries = @intCast(u8, (long_name.len + 12) / 13);
+            const num_lfn_entries = @as(u8, @intCast((long_name.len + 12) / 13));
 
             // Create the long entries
             var lfn_array = try allocator.alloc(LongName, num_lfn_entries);
@@ -1905,13 +1905,13 @@ pub fn Fat32FS(comptime StreamType: type) type {
                     var temp: [13]u16 = [_]u16{0xFFFF} ** 13;
                     const long_name_slice = long_name[(entry_index * 13)..];
                     if (long_name_slice.len < 13) {
-                        for (long_name_slice) |char, i| {
+                        for (long_name_slice, 0..) |char, i| {
                             temp[i] = char;
                         }
                         // NULL terminated
                         temp[long_name_slice.len] = 0x0000;
                     } else {
-                        for (temp) |*char, i| {
+                        for (temp, 0..) |*char, i| {
                             char.* = long_name[(entry_index * 13) + i];
                         }
                     }
@@ -1947,21 +1947,21 @@ pub fn Fat32FS(comptime StreamType: type) type {
         fn createShortNameEntry(name: [11]u8, attributes: ShortName.Attributes, cluster: u32) ShortName {
             const date_time = arch.getDateTime();
 
-            const date = @intCast(u16, date_time.day | date_time.month << 5 | (date_time.year - 1980) << 9);
-            const time = @intCast(u16, date_time.second / 2 | date_time.minute << 5 | date_time.hour << 11);
+            const date = @intCast(@as(u16, date_time.day | date_time.month << 5 | (date_time.year - 1980) << 9));
+            const time = @intCast(@as(u16, date_time.second / 2 | date_time.minute << 5 | date_time.hour << 11));
 
             return .{
                 .name = name[0..8].*,
                 .extension = name[8..11].*,
                 .attributes = @enumToInt(attributes),
-                .time_created_tenth = @intCast(u8, (date_time.second % 2) * 100),
+                .time_created_tenth = @intCast(@as(u8, date_time.second % 2) * 100),
                 .time_created = time,
                 .date_created = date,
                 .date_last_access = date,
-                .cluster_high = @truncate(u16, cluster >> 16),
+                .cluster_high = @truncate(cluster >> 16),
                 .time_last_modification = time,
                 .date_last_modification = date,
-                .cluster_low = @truncate(u16, cluster),
+                .cluster_low = @truncate(cluster),
                 .size = 0x00000000,
             };
         }
@@ -2018,7 +2018,7 @@ pub fn Fat32FS(comptime StreamType: type) type {
             // TODO: Once FatDirEntry can be a packed struct, then can write as bytes and not convert
             var write_buff = try self.allocator.alloc(u8, entries_size_bytes);
             defer self.allocator.free(write_buff);
-            for (entries.long_entry) |long_entry, i| {
+            for (entries.long_entry, 0..) |long_entry, i| {
                 initBytes(LongName, long_entry, write_buff[(32 * i)..]);
             }
             initBytes(ShortName, entries.short_entry, write_buff[write_buff.len - 32 ..]);
@@ -2320,7 +2320,7 @@ test "LongName.getName" {
         // 2 * 13 u16's
         var buff: [26]u8 = undefined;
         const end = try lfn.getName(buff[0..]);
-        try expectEqualSlices(u8, "€1€2", buff[0..end]);
+        try expectEqualSlices(u8, "\u{20AC}1\u{20AC}2", buff[0..end]);
     }
     {
         const lfn = LongName{
@@ -2438,7 +2438,7 @@ test "ShortName.getName - File" {
         };
         var name: [12]u8 = undefined;
         const name_end = sfn.getName(name[0..]);
-        try expectEqualSlices(u8, "σ2345.1", name[0..name_end]);
+        try expectEqualSlices(u8, "\u{03C3}2345.1", name[0..name_end]);
     }
     {
         const sfn = ShortName{
@@ -2457,7 +2457,7 @@ test "ShortName.getName - File" {
         };
         var name: [12]u8 = undefined;
         const name_end = sfn.getName(name[0..]);
-        try expectEqualSlices(u8, "Éá345.1", name[0..name_end]);
+        try expectEqualSlices(u8, "\u{00C9}\u{00E1}345.1", name[0..name_end]);
     }
     {
         const sfn = ShortName{
@@ -2476,7 +2476,7 @@ test "ShortName.getName - File" {
         };
         var name: [12]u8 = undefined;
         const name_end = sfn.getName(name[0..]);
-        try expectEqualSlices(u8, "12345.1░", name[0..name_end]);
+        try expectEqualSlices(u8, "12345.1\u{2591}", name[0..name_end]);
     }
 }
 
@@ -2536,7 +2536,7 @@ test "ShortName.getName - Dir" {
         };
         var name: [12]u8 = undefined;
         const name_end = sfn.getName(name[0..]);
-        try expectEqualSlices(u8, "σ2345", name[0..name_end]);
+        try expectEqualSlices(u8, "\u{03C3}2345", name[0..name_end]);
     }
     {
         const sfn = ShortName{
@@ -4110,14 +4110,14 @@ test "Fat32FS.open - create file" {
     try vfs.setRoot(test_fs.root_node.node);
 
     // Open and close
-    const open_file = try vfs.openFile("/fileαfile€file.txt", .CREATE_FILE);
+    const open_file = try vfs.openFile("/file\u{03B1}file\u{20AC}file.txt", .CREATE_FILE);
     open_file.close();
 
     // Can't open it as a dir
-    try expectError(error.IsAFile, vfs.openDir("/fileαfile€file.txt", .NO_CREATION));
+    try expectError(error.IsAFile, vfs.openDir("/file\u{03B1}file\u{20AC}file.txt", .NO_CREATION));
 
     // Can we open the same file
-    const read_file = try vfs.openFile("/fileαfile€file.txt", .NO_CREATION);
+    const read_file = try vfs.openFile("/file\u{03B1}file\u{20AC}file.txt", .NO_CREATION);
     defer read_file.close();
 
     // Reads nothing
@@ -4141,13 +4141,13 @@ test "Fat32FS.open - create directory" {
     try vfs.setRoot(test_fs.root_node.node);
 
     // Open and close
-    const open_dir = try vfs.openDir("/fileαfile€file", .CREATE_DIR);
+    const open_dir = try vfs.openDir("/file\u{03B1}file\u{20AC}file", .CREATE_DIR);
     open_dir.close();
 
     // Can't open it as a file
-    try expectError(error.IsADirectory, vfs.openFile("/fileαfile€file", .NO_CREATION));
+    try expectError(error.IsADirectory, vfs.openFile("/file\u{03B1}file\u{20AC}file", .NO_CREATION));
 
-    const open = try vfs.openDir("/fileαfile€file", .NO_CREATION);
+    const open = try vfs.openDir("/file\u{03B1}file\u{20AC}file", .NO_CREATION);
     defer open.close();
 }
 
@@ -4164,7 +4164,7 @@ test "Fat32FS.open - create symlink" {
 
     try vfs.setRoot(test_fs.root_node.node);
 
-    try expectError(error.InvalidFlags, vfs.openSymlink("/fileαfile€file.txt", "/file.txt", .CREATE_SYMLINK));
+    try expectError(error.InvalidFlags, vfs.openSymlink("/file\u{03B1}file\u{20AC}file.txt", "/file.txt", .CREATE_SYMLINK));
 }
 
 test "Fat32FS.open - create nested directories" {
@@ -4180,25 +4180,25 @@ test "Fat32FS.open - create nested directories" {
 
     try vfs.setRoot(test_fs.root_node.node);
 
-    const open1 = try vfs.openDir("/fileαfile€file", .CREATE_DIR);
+    const open1 = try vfs.openDir("/file\u{03B1}file\u{20AC}file", .CREATE_DIR);
     defer open1.close();
 
-    const open2 = try vfs.openDir("/fileαfile€file/folder", .CREATE_DIR);
+    const open2 = try vfs.openDir("/file\u{03B1}file\u{20AC}file/folder", .CREATE_DIR);
     defer open2.close();
 
-    const open3 = try vfs.openDir("/fileαfile€file/folder/1", .CREATE_DIR);
+    const open3 = try vfs.openDir("/file\u{03B1}file\u{20AC}file/folder/1", .CREATE_DIR);
     defer open3.close();
 
-    const open4 = try vfs.openDir("/fileαfile€file/folder/1/2", .CREATE_DIR);
+    const open4 = try vfs.openDir("/file\u{03B1}file\u{20AC}file/folder/1/2", .CREATE_DIR);
     defer open4.close();
 
-    const open5 = try vfs.openDir("/fileαfile€file/folder/1/2/3", .CREATE_DIR);
+    const open5 = try vfs.openDir("/file\u{03B1}file\u{20AC}file/folder/1/2/3", .CREATE_DIR);
     defer open5.close();
 
-    const open6 = try vfs.openDir("/fileαfile€file/folder/1/2/3/end", .CREATE_DIR);
+    const open6 = try vfs.openDir("/file\u{03B1}file\u{20AC}file/folder/1/2/3/end", .CREATE_DIR);
     defer open6.close();
 
-    const open_dir = try vfs.openDir("/fileαfile€file/folder/1/2/3/end", .NO_CREATION);
+    const open_dir = try vfs.openDir("/file\u{03B1}file\u{20AC}file/folder/1/2/3/end", .NO_CREATION);
     defer open_dir.close();
 }
 
@@ -4712,7 +4712,7 @@ test "Fat32FS.nameToLongName - invalid name" {
         "<file.txt",
         ">file.txt",
         "?file.txt",
-        "\\file.txt",
+        "\file.txt",
         "|file.txt",
         [_]u8{0x10} ++ "file.txt",
         [_]u8{0x7F} ++ "file.txt",
@@ -4755,9 +4755,9 @@ test "Fat32FS.nameToLongName - valid name" {
         "insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long_insanely_long.txt",
         "nope.[x]",
         "s  p  a  c  e  s.txt",
-        "UTF16.€xt",
-        "UTF16€.txt",
-        "αlpha.txt",
+        "UTF16.\u{20AC}xt",
+        "UTF16\u{20AC}.txt",
+        "\u{03B1}lpha.txt",
         "file.txt",
     };
 
@@ -4772,7 +4772,7 @@ test "Fat32FS.nameToLongName - valid name" {
 test "Fat32FS.isValidSFNChar - invalid" {
     var stream = &std.io.fixedBufferStream(&[_]u8{});
     try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar(' '), null);
-    try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar('€'), null);
+    try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar('\u{20AC}'), null);
     try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar('+'), null);
     try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar(','), null);
     try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar(';'), null);
@@ -4780,7 +4780,7 @@ test "Fat32FS.isValidSFNChar - invalid" {
     try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar('['), null);
     try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar(']'), null);
 
-    try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar('α'), 0xE0);
+    try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar('\u{03B1}'), 0xE0);
     try expectEqual(Fat32FS(@TypeOf(stream)).isValidSFNChar('a'), 'a');
 }
 
@@ -4847,8 +4847,8 @@ test "Fat32FS.longNameToShortName - long name" {
     const name_cases = [_][]const u8{
         "loooooong.txt",
         "loooooo.ng.txt",
-        "loooooo.ng€.txt",
-        "looooo€.ng.txt",
+        "loooooo.ng\u{20AC}.txt",
+        "looooo\u{20AC}.ng.txt",
         "loooooong.txttttt",
         "looooo.txttttt",
     };
@@ -4891,7 +4891,7 @@ test "Fat32FS.longNameToShortName - invalid short name characters" {
         "=file.txt",
         "[file.txt",
         "]file.txt",
-        "€file.txt",
+        "\u{20AC}file.txt",
     };
 
     var stream = &std.io.fixedBufferStream(&[_]u8{});
@@ -5010,7 +5010,7 @@ test "Fat32FS.longNameToShortName - CP437" {
     var stream = &std.io.fixedBufferStream(&[_]u8{});
     const expected = [_]u8{0xE0} ++ "LPHA   TXT";
 
-    const long_name = try Fat32FS(@TypeOf(stream)).nameToLongName(std.testing.allocator, "αlpha.txt");
+    const long_name = try Fat32FS(@TypeOf(stream)).nameToLongName(std.testing.allocator, "\u{03B1}lpha.txt");
     defer std.testing.allocator.free(long_name);
     const actual = try Fat32FS(@TypeOf(stream)).longNameToShortName(long_name, &[_][11]u8{});
     try expectEqualSlices(u8, actual[0..], expected[0..]);
@@ -5095,8 +5095,8 @@ test "Fat32FS.createLongNameEntry - max 255 characters" {
         .third = UA ** 2,
     }} ** 20;
 
-    for (expected) |*e, i| {
-        e.order = 20 - @intCast(u8, i);
+    for (expected, 0..) |*e, i| {
+        e.order = 20 - @intCast(i, u8);
     }
     expected[0] = LongName{
         .order = 0x54, // 0x40 | 0x14
@@ -5106,7 +5106,7 @@ test "Fat32FS.createLongNameEntry - max 255 characters" {
         .third = [_]u16{ 0xFFFF, 0xFFFF },
     };
 
-    for (expected) |ex, i| {
+    for (expected, 0..) |ex, i| {
         try expectEqual(entries[i], ex);
     }
 }

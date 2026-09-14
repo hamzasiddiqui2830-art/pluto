@@ -58,9 +58,9 @@ fn lcrValue(char_len: u8, stop_bit: bool, parity_bit: bool, msb: u1) SerialError
         return SerialError.InvalidCharacterLength;
     // Set the msb and OR in all arguments passed
     const val = char_len & 0x3 |
-        @intCast(u8, @boolToInt(stop_bit)) << 2 |
-        @intCast(u8, @boolToInt(parity_bit)) << 3 |
-        @intCast(u8, msb) << 7;
+        @intCast(@boolToInt(stop_bit, u8)) << 2 |
+        @intCast(@boolToInt(parity_bit, u8)) << 3 |
+        @intCast(msb, u8) << 7;
     return val;
 }
 
@@ -80,7 +80,7 @@ fn lcrValue(char_len: u8, stop_bit: bool, parity_bit: bool, msb: u1) SerialError
 fn baudDivisor(baud: u32) SerialError!u16 {
     if (baud > BAUD_MAX or baud == 0)
         return SerialError.InvalidBaudRate;
-    return @truncate(u16, BAUD_MAX / baud);
+    return @truncate(BAUD_MAX / baud);
 }
 
 ///
@@ -129,9 +129,9 @@ pub fn init(baud: u32, port: Port) SerialError!void {
         panic(@errorReturnTrace(), "Failed to initialise serial output setup: {}", .{e});
     });
     // Send the divisor's lsb
-    arch.out(port_int, @truncate(u8, divisor));
+    arch.out(port_int, @truncate(divisor));
     // Send the divisor's msb
-    arch.out(port_int + 1, @truncate(u8, divisor >> 8));
+    arch.out(port_int + 1, @truncate(divisor >> 8));
     // Send the properties to use
     arch.out(port_int + LCR, lcrValue(CHAR_LEN, SINGLE_STOP_BIT, PARITY_BIT, 0) catch |e| {
         panic(@errorReturnTrace(), "Failed to setup serial properties: {}", .{e});
@@ -150,7 +150,7 @@ test "lcrValue computes the correct value" {
                     const expected = char_len & 0x3 |
                         @boolToInt(stop_bit) << 2 |
                         @boolToInt(parity_bit) << 3 |
-                        @intCast(u8, msb) << 7;
+                        @intCast(msb, u8) << 7;
                     try testing.expectEqual(val, expected);
                 }
             }
@@ -172,7 +172,7 @@ test "baudDivisor" {
     var baud: u32 = 1;
     while (baud <= BAUD_MAX) : (baud += 1) {
         const val = try baudDivisor(baud);
-        const expected = @truncate(u16, BAUD_MAX / baud);
+        const expected = @truncate(BAUD_MAX / baud);
         try testing.expectEqual(val, expected);
     }
 }

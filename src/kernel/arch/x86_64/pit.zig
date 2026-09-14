@@ -12,13 +12,13 @@ pub const DEFAULT_FREQUENCY: u32 = 100;
 /// PIT divisor for a given frequency.
 fn pitDivisor(frequency: u32) u16 {
     const PIT_BASE_FREQ: u32 = 1193182;
-    return @truncate(u16, PIT_BASE_FREQ / frequency);
+    return @truncate(PIT_BASE_FREQ / frequency);
 }
 
 /// Initialize the PIT timer.
 pub fn init() void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     setFrequency(DEFAULT_FREQUENCY);
 }
@@ -31,8 +31,8 @@ pub fn setFrequency(frequency: u32) void {
     arch.out(PIT_COMMAND, 0x36);
     
     // Send divisor
-    arch.out(PIT_CHANNEL0, @truncate(u8, divisor));
-    arch.out(PIT_CHANNEL0, @truncate(u8, divisor >> 8));
+    arch.out(PIT_CHANNEL0, @truncate(divisor));
+    arch.out(PIT_CHANNEL0, @truncate(divisor >> 8));
 }
 
 test "PIT initialization" {

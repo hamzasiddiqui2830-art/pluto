@@ -29,8 +29,8 @@ fn defaultHandler(state: *arch.CpuState) void {
 
 /// Initialize IRQ subsystem.
 pub fn init() void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
     // Set default handlers for all IRQs
     for (irq_handlers) |*handler| {

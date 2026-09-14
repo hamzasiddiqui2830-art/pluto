@@ -39,7 +39,7 @@ pub const IdtPtr = packed struct {
 };
 
 /// Interrupt handler function type.
-pub const InterruptHandler = fn () callconv(.Naked) void;
+pub const InterruptHandler = fn () linksection(".text") void;
 
 /// IDT error types.
 pub const IdtError = error{
@@ -87,15 +87,15 @@ var idt_entries: [NUMBER_OF_ENTRIES]IdtEntry = [_]IdtEntry{IdtEntry{
 /// Make an IDT entry.
 fn makeEntry(base: u64, selector: u16, gate_type: u4, privilege: u2, ist: u8) IdtEntry {
     return IdtEntry{
-        .base_low = @truncate(u16, base),
+        .base_low = @truncate(base),
         .selector = selector,
         .ist = ist,
         .gate_type = gate_type,
         .storage_segment = 0,
         .privilege = privilege,
         .present = 1,
-        .base_middle = @truncate(u16, base >> 16),
-        .base_high = @truncate(u32, base >> 32),
+        .base_middle = @truncate(base >> 16),
+        .base_high = @truncate(base >> 32),
         .zero = 0,
     };
 }
@@ -111,15 +111,15 @@ pub fn openInterruptGate(index: u8, handler: InterruptHandler) IdtError!void {
         return IdtError.IdtEntryExists;
     }
     
-    idt_entries[index] = makeEntry(@ptrToInt(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0, 0);
+    idt_entries[index] = makeEntry(@intFromPtr(handler), gdt.KERNEL_CODE_OFFSET, INTERRUPT_GATE, PRIVILEGE_RING_0, 0);
 }
 
 /// Initialize the IDT.
 pub fn init() void {
-    log.info("Init\\n", .{});
-    defer log.info("Done\\n", .{});
+    log.info("Init\n", .{});
+    defer log.info("Done\n", .{});
     
-    idt_ptr.base = @ptrToInt(&idt_entries);
+    idt_ptr.base = @intFromPtr(&idt_entries);
     arch.lidt(&idt_ptr);
 }
 

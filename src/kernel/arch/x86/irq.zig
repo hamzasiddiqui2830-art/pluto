@@ -46,12 +46,12 @@ export fn irqHandler(ctx: *arch.CpuState) usize {
         panic(@errorReturnTrace(), "Not an IRQ number: {}\n", .{ctx.int_num});
     }
 
-    var ret_esp = @ptrToInt(ctx);
+    var ret_esp = @intFromPtr(ctx);
 
     const irq_offset = ctx.int_num - IRQ_OFFSET;
     if (isValidIrq(irq_offset)) {
         // IRQ index is valid so can truncate
-        const irq_num = @truncate(u8, irq_offset);
+        const irq_num = @truncate(irq_offset);
         if (irq_handlers[irq_num]) |handler| {
             // Make sure it isn't a spurious irq
             if (!pic.spuriousIrq(irq_num)) {
@@ -144,7 +144,7 @@ pub fn init() void {
     }
 }
 
-fn testFunction0() callconv(.Naked) void {}
+fn testFunction0() linksection(".text") void {}
 
 fn testFunction1(ctx: *arch.CpuState) u32 {
     // Suppress unused variable warnings
@@ -197,7 +197,7 @@ test "registerIrq re-register irq handler" {
     try expectError(IrqError.IrqExists, registerIrq(0, testFunction2));
 
     // Post testing
-    for (irq_handlers) |h, i| {
+    for (irq_handlers, 0..) |h, i| {
         if (i != 0) {
             try expect(null == h);
         } else {
@@ -225,7 +225,7 @@ test "registerIrq register irq handler" {
     try registerIrq(0, testFunction1);
 
     // Post testing
-    for (irq_handlers) |h, i| {
+    for (irq_handlers, 0..) |h, i| {
         if (i != 0) {
             try expect(null == h);
         } else {
@@ -246,7 +246,7 @@ test "registerIrq invalid irq index" {
 ///
 fn rt_unregisteredHandlers() void {
     // Ensure all ISR are not registered yet
-    for (irq_handlers) |h, i| {
+    for (irq_handlers, 0..) |h, i| {
         if (h) |_| {
             panic(@errorReturnTrace(), "FAILURE: Handler found for IRQ: {}-{}\n", .{ i, h });
         }
@@ -260,9 +260,9 @@ fn rt_unregisteredHandlers() void {
 ///
 fn rt_openedIdtEntries() void {
     const loaded_idt = arch.sidt();
-    const idt_entries = @intToPtr([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
+    const idt_entries = @ptrFromInt([*]idt.IdtEntry, loaded_idt.base)[0..idt.NUMBER_OF_ENTRIES];
 
-    for (idt_entries) |entry, i| {
+    for (idt_entries, 0..) |entry, i| {
         if (i >= IRQ_OFFSET and isValidIrq(i - IRQ_OFFSET)) {
             if (!idt.isIdtOpen(entry)) {
                 panic(@errorReturnTrace(), "FAILURE: IDT entry for {} is not open\n", .{i});

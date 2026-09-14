@@ -26,8 +26,8 @@ const LSR_THR_EMPTY: u8 = 0x20;
 
 /// Initialize a serial port.
 pub fn init(baudrate: u32, base: u16) !void {
-    log.info("Init (COM{d}, {d} baud)\\n", .{ ((base - COM1_BASE) / 0x100) + 1, baudrate });
-    defer log.info("Done\\n", .{});
+    log.info("Init (COM{d}, {d} baud)\n", .{ ((base - COM1_BASE) / 0x100) + 1, baudrate });
+    defer log.info("Done\n", .{});
     
     // Disable interrupts
     arch.out(base + OFFSET_IER, 0x00);
@@ -37,8 +37,8 @@ pub fn init(baudrate: u32, base: u16) !void {
     
     // Set divisor for baud rate
     const divisor = 115200 / baudrate;
-    arch.out(base + OFFSET_RX, @truncate(u8, divisor));
-    arch.out(base + OFFSET_IER, @truncate(u8, divisor >> 8));
+    arch.out(base + OFFSET_RX, @truncate(divisor));
+    arch.out(base + OFFSET_IER, @truncate(divisor >> 8));
     
     // Clear DLAB, set 8N1
     arch.out(base + OFFSET_LCR, 0x03);

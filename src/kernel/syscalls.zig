@@ -207,7 +207,7 @@ pub fn handle(syscall: Syscall, ctx: *const arch.CpuState, arg1: usize, arg2: us
 fn getData(ptr: usize, len: usize) (Error || std.mem.Allocator.Error || vmm.VmmError || bitmap.BitmapError)![]u8 {
     if (scheduler.current_task.kernel) {
         if (try vmm.kernel_vmm.isSet(ptr)) {
-            return @intToPtr([*]u8, ptr)[0..len];
+            return @ptrFromInt([*]u8, ptr)[0..len];
         } else {
             return error.NotAllocated;
         }
@@ -258,7 +258,7 @@ fn handleOpen(ctx: *const arch.CpuState, path_ptr: usize, path_len: usize, flags
     };
     // The symlink target could refer to a location in user memory so convert that too
     if (open_args.symlink_target) |target| {
-        open_args.symlink_target = try getData(@ptrToInt(target.ptr), target.len);
+        open_args.symlink_target = try getData(@intFromPtr(target.ptr), target.len);
     }
     defer if (!current_task.kernel) if (open_args.symlink_target) |target| allocator.free(target);
 
@@ -296,7 +296,7 @@ fn handleRead(ctx: *const arch.CpuState, node_handle: usize, buff_ptr: usize, bu
     _ = ignored2;
     if (node_handle >= task.VFS_HANDLES_PER_PROCESS)
         return error.OutOfBounds;
-    const real_handle = @intCast(task.Handle, node_handle);
+    const real_handle = @intCast(node_handle, task.Handle);
     if (buff_len > USER_MAX_DATA_LEN) {
         return Error.TooBig;
     }
@@ -308,7 +308,7 @@ fn handleRead(ctx: *const arch.CpuState, node_handle: usize, buff_ptr: usize, bu
             .File => |*f| f,
             else => return error.NotAFile,
         };
-        var buff = if (current_task.kernel) @intToPtr([*]u8, buff_ptr)[0..buff_len] else try allocator.alloc(u8, buff_len);
+        var buff = if (current_task.kernel) @ptrFromInt([*]u8, buff_ptr)[0..buff_len] else try allocator.alloc(u8, buff_len);
         defer if (!current_task.kernel) allocator.free(buff);
 
         const bytes_read = try file.read(buff);
@@ -345,7 +345,7 @@ fn handleWrite(ctx: *const arch.CpuState, node_handle: usize, buff_ptr: usize, b
     _ = ignored2;
     if (node_handle >= task.VFS_HANDLES_PER_PROCESS)
         return error.OutOfBounds;
-    const real_handle = @intCast(task.Handle, node_handle);
+    const real_handle = @intCast(node_handle, task.Handle);
 
     const current_task = scheduler.current_task;
     const node_opt = current_task.getVFSHandle(real_handle) catch panic(@errorReturnTrace(), "Failed to get VFS node for handle {}\n", .{real_handle});
@@ -384,7 +384,7 @@ fn handleClose(ctx: *const arch.CpuState, node_handle: usize, ignored1: usize, i
     _ = ignored4;
     if (node_handle >= task.VFS_HANDLES_PER_PROCESS)
         return error.OutOfBounds;
-    const real_handle = @intCast(task.Handle, node_handle);
+    const real_handle = @intCast(node_handle, task.Handle);
     const current_task = scheduler.current_task;
     const node_opt = current_task.getVFSHandle(real_handle) catch panic(@errorReturnTrace(), "Failed to get VFS node for handle {}\n", .{real_handle});
     if (node_opt) |node| {
@@ -429,7 +429,7 @@ fn testInitMem(comptime num_vmm_entries: usize, alloc: std.mem.Allocator, map_al
     var buffer = try alloc.alloc(u8, num_vmm_entries * vmm.BLOCK_SIZE);
     var fixed_buffer_allocator = std.heap.FixedBufferAllocator.init(buffer[0..]);
 
-    vmm.kernel_vmm = try vmm.VirtualMemoryManager(arch.VmmPayload).init(@ptrToInt(fixed_buffer_allocator.buffer.ptr), @ptrToInt(fixed_buffer_allocator.buffer.ptr) + buffer.len, alloc, arch.VMM_MAPPER, arch.KERNEL_VMM_PAYLOAD);
+    vmm.kernel_vmm = try vmm.VirtualMemoryManager(arch.VmmPayload).init(@intFromPtr(fixed_buffer_allocator.buffer.ptr), @intFromPtr(fixed_buffer_allocator.buffer.ptr) + buffer.len, alloc, arch.VMM_MAPPER, arch.KERNEL_VMM_PAYLOAD);
     // The PMM is required as well
     const mem_profile = mem.MemProfile{
         .vaddr_end = undefined,
@@ -492,7 +492,7 @@ test "handleOpen" {
 
     // Creating a file
     var name1 = try buffer_allocator.dupe(u8, "/abc.txt");
-    var test_handle = @intCast(task.Handle, try handleOpen(&empty, @ptrToInt(name1.ptr), name1.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined));
+    var test_handle = @intCast(try handleOpen(&empty, @intFromPtr(name1.ptr, task.Handle), name1.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined));
     var test_node = (try current_task.getVFSHandle(test_handle)).?;
     try testing.expectEqual(testfs.tree.children.items.len, 1);
     var tree = testfs.tree.children.items[0];
@@ -504,7 +504,7 @@ test "handleOpen" {
 
     // Creating a dir
     var name2 = try buffer_allocator.dupe(u8, "/def");
-    test_handle = @intCast(task.Handle, try handleOpen(&empty, @ptrToInt(name2.ptr), name2.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, undefined));
+    test_handle = @intCast(try handleOpen(&empty, @intFromPtr(name2.ptr, task.Handle), name2.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, undefined));
     test_node = (try current_task.getVFSHandle(test_handle)).?;
     try testing.expectEqual(testfs.tree.children.items.len, 2);
     tree = testfs.tree.children.items[1];
@@ -516,7 +516,7 @@ test "handleOpen" {
 
     // Creating a file under a new dir
     var name3 = try buffer_allocator.dupe(u8, "/def/ghi.zig");
-    test_handle = @intCast(task.Handle, try handleOpen(&empty, @ptrToInt(name3.ptr), name3.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined));
+    test_handle = @intCast(try handleOpen(&empty, @intFromPtr(name3.ptr, task.Handle), name3.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined));
     test_node = (try current_task.getVFSHandle(test_handle)).?;
     try testing.expectEqual(testfs.tree.children.items[1].children.items.len, 1);
     tree = testfs.tree.children.items[1].children.items[0];
@@ -527,7 +527,7 @@ test "handleOpen" {
     try testing.expectEqual(tree.children.items.len, 0);
 
     // Opening an existing file
-    test_handle = @intCast(task.Handle, try handleOpen(&empty, @ptrToInt(name3.ptr), name3.len, @enumToInt(vfs.OpenFlags.NO_CREATION), 0, undefined));
+    test_handle = @intCast(try handleOpen(&empty, @intFromPtr(name3.ptr, task.Handle), name3.len, @enumToInt(vfs.OpenFlags.NO_CREATION), 0, undefined));
     test_node = (try current_task.getVFSHandle(test_handle)).?;
     try testing.expectEqual(testfs.tree.children.items[1].children.items.len, 1);
     try testing.expect(test_node.isFile());
@@ -553,43 +553,43 @@ test "handleRead" {
     const empty = arch.CpuState.empty();
 
     var test_file_path = try buffer_allocator.dupe(u8, "/foo.txt");
-    var test_file = @intCast(task.Handle, try handleOpen(&empty, @ptrToInt(test_file_path.ptr), test_file_path.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined));
+    var test_file = @intCast(try handleOpen(&empty, @intFromPtr(test_file_path.ptr, task.Handle), test_file_path.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined));
     var f_data = &testfs.tree.children.items[0].data;
     var str = "test123";
     f_data.* = try testing.allocator.dupe(u8, str);
 
     var buffer: [str.len]u8 = undefined;
     {
-        const length = try handleRead(&empty, test_file, @ptrToInt(&buffer[0]), buffer.len, 0, undefined);
+        const length = try handleRead(&empty, test_file, @intFromPtr(&buffer[0]), buffer.len, 0, undefined);
         try testing.expect(std.mem.eql(u8, str, buffer[0..length]));
     }
 
     {
-        const length = try handleRead(&empty, test_file, @ptrToInt(&buffer[0]), buffer.len + 1, 0, undefined);
+        const length = try handleRead(&empty, test_file, @intFromPtr(&buffer[0]), buffer.len + 1, 0, undefined);
         try testing.expect(std.mem.eql(u8, str, buffer[0..length]));
     }
 
     {
-        const length = try handleRead(&empty, test_file, @ptrToInt(&buffer[0]), buffer.len + 3, 0, undefined);
+        const length = try handleRead(&empty, test_file, @intFromPtr(&buffer[0]), buffer.len + 3, 0, undefined);
         try testing.expect(std.mem.eql(u8, str, buffer[0..length]));
     }
 
     {
-        const length = try handleRead(&empty, test_file, @ptrToInt(&buffer[0]), buffer.len - 1, 0, undefined);
+        const length = try handleRead(&empty, test_file, @intFromPtr(&buffer[0]), buffer.len - 1, 0, undefined);
         try testing.expect(std.mem.eql(u8, str[0 .. str.len - 1], buffer[0..length]));
     }
 
     {
-        const length = try handleRead(&empty, test_file, @ptrToInt(&buffer[0]), 0, 0, undefined);
+        const length = try handleRead(&empty, test_file, @intFromPtr(&buffer[0]), 0, 0, undefined);
         try testing.expect(std.mem.eql(u8, str[0..0], buffer[0..length]));
     }
     // Try reading from a symlink
     var args = try buffer_allocator.create(vfs.OpenArgs);
     args.* = vfs.OpenArgs{ .symlink_target = test_file_path };
     var link = try buffer_allocator.dupe(u8, "/link");
-    var test_link = @intCast(task.Handle, try handleOpen(&empty, @ptrToInt(link.ptr), link.len, @enumToInt(vfs.OpenFlags.CREATE_SYMLINK), @ptrToInt(args), undefined));
+    var test_link = @intCast(try handleOpen(&empty, @intFromPtr(link.ptr, task.Handle), link.len, @enumToInt(vfs.OpenFlags.CREATE_SYMLINK), @intFromPtr(args), undefined));
     {
-        const length = try handleRead(&empty, test_link, @ptrToInt(&buffer[0]), buffer.len, 0, undefined);
+        const length = try handleRead(&empty, test_link, @intFromPtr(&buffer[0]), buffer.len, 0, undefined);
         try testing.expect(std.mem.eql(u8, str[0..str.len], buffer[0..length]));
     }
 }
@@ -626,12 +626,12 @@ test "handleRead errors" {
 
         // Reading from a dir
         const name = try buffer_allocator.dupe(u8, "/dir");
-        const node = try handleOpen(&empty, @ptrToInt(name.ptr), name.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, 0);
+        const node = try handleOpen(&empty, @intFromPtr(name.ptr), name.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, 0);
         try testing.expectError(error.NotAFile, handleRead(&empty, node, 0, 0, 0, 0));
 
         // User buffer is too big
         const name2 = try buffer_allocator.dupe(u8, "/file.txt");
-        const node2 = try handleOpen(&empty, @ptrToInt(name2.ptr), name2.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, 0);
+        const node2 = try handleOpen(&empty, @intFromPtr(name2.ptr), name2.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, 0);
         scheduler.current_task.kernel = false;
         try testing.expectError(Error.TooBig, handleRead(&empty, node2, 0, USER_MAX_DATA_LEN + 1, 0, 0));
     }
@@ -658,21 +658,21 @@ test "handleWrite" {
 
     // Open test file
     const name = try buffer_allocator.dupe(u8, "/abc.txt");
-    const node = try handleOpen(&empty, @ptrToInt(name.ptr), name.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined);
+    const node = try handleOpen(&empty, @intFromPtr(name.ptr), name.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined);
 
     // Write
     const data = try buffer_allocator.dupe(u8, "test_data 123");
-    const res = try handleWrite(&empty, node, @ptrToInt(data.ptr), data.len, 0, 0);
+    const res = try handleWrite(&empty, node, @intFromPtr(data.ptr), data.len, 0, 0);
     try testing.expectEqual(res, data.len);
     try testing.expectEqualSlices(u8, data, testfs.tree.children.items[0].data.?);
 
     // Write to a file in a folder
     const name2 = try buffer_allocator.dupe(u8, "/dir");
-    _ = try handleOpen(&empty, @ptrToInt(name2.ptr), name2.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, undefined);
+    _ = try handleOpen(&empty, @intFromPtr(name2.ptr), name2.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, undefined);
     const name3 = try buffer_allocator.dupe(u8, "/dir/def.txt");
-    const node3 = try handleOpen(&empty, @ptrToInt(name3.ptr), name3.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined);
+    const node3 = try handleOpen(&empty, @intFromPtr(name3.ptr), name3.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, undefined);
     const data2 = try buffer_allocator.dupe(u8, "some more test data!");
-    const res2 = try handleWrite(&empty, node3, @ptrToInt(data2.ptr), data2.len, 0, 0);
+    const res2 = try handleWrite(&empty, node3, @intFromPtr(data2.ptr), data2.len, 0, 0);
     try testing.expectEqual(res2, data2.len);
     try testing.expectEqualSlices(u8, data2, testfs.tree.children.items[1].children.items[0].data.?);
 }
@@ -709,12 +709,12 @@ test "handleWrite errors" {
 
         // Writing to a dir
         const name = try buffer_allocator.dupe(u8, "/dir");
-        const node = try handleOpen(&empty, @ptrToInt(name.ptr), name.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, 0);
+        const node = try handleOpen(&empty, @intFromPtr(name.ptr), name.len, @enumToInt(vfs.OpenFlags.CREATE_DIR), 0, 0);
         try testing.expectError(error.NotAFile, handleWrite(&empty, node, 0, 0, 0, 0));
 
         // User buffer is too big
         const name2 = try buffer_allocator.dupe(u8, "/file.txt");
-        const node2 = try handleOpen(&empty, @ptrToInt(name2.ptr), name2.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, 0);
+        const node2 = try handleOpen(&empty, @intFromPtr(name2.ptr), name2.len, @enumToInt(vfs.OpenFlags.CREATE_FILE), 0, 0);
         scheduler.current_task.kernel = false;
         try testing.expectError(Error.TooBig, handleWrite(&empty, node2, 0, USER_MAX_DATA_LEN + 1, 0, 0));
     }
@@ -756,15 +756,15 @@ test "handleOpen errors" {
         const test_alloc = try buffer_allocator.alloc(u8, 1);
         // The kernel VMM and task VMM need to have their buffers mapped, so we'll temporarily use the buffer allocator since it operates within a known address space
         allocator = buffer_allocator;
-        try testing.expectError(error.NotAllocated, handleOpen(&empty, @ptrToInt(test_alloc.ptr), 1, 0, 0, 0));
+        try testing.expectError(error.NotAllocated, handleOpen(&empty, @intFromPtr(test_alloc.ptr), 1, 0, 0, 0));
         allocator = std.testing.allocator;
 
         // Unallocated kernel address
         scheduler.current_task.kernel = true;
-        try testing.expectError(error.NotAllocated, handleOpen(&empty, @ptrToInt(test_alloc.ptr), 1, 0, 0, 0));
+        try testing.expectError(error.NotAllocated, handleOpen(&empty, @intFromPtr(test_alloc.ptr), 1, 0, 0, 0));
 
         // Invalid flag enum value
-        try testing.expectError(error.InvalidFlags, handleOpen(&empty, @ptrToInt(test_alloc.ptr), 1, 999, 0, 0));
+        try testing.expectError(error.InvalidFlags, handleOpen(&empty, @intFromPtr(test_alloc.ptr), 1, 999, 0, 0));
     }
     try testing.expect(!testing.allocator_instance.detectLeaks());
 }

@@ -33,7 +33,7 @@ var the_bitmap: PmmBitmap = undefined;
 ///     *: See PmmBitmap.setEntry. Could occur if the address is out of bounds.
 ///
 pub fn setAddr(addr: usize) bitmap.BitmapError!void {
-    try the_bitmap.setEntry(@intCast(u32, addr / BLOCK_SIZE));
+    try the_bitmap.setEntry(@intCast(addr / BLOCK_SIZE, u32));
 }
 
 ///
@@ -48,7 +48,7 @@ pub fn setAddr(addr: usize) bitmap.BitmapError!void {
 ///     *: See PmmBitmap.setEntry. Could occur if the address is out of bounds.
 ///
 pub fn isSet(addr: usize) bitmap.BitmapError!bool {
-    return the_bitmap.isSet(@intCast(u32, addr / BLOCK_SIZE));
+    return the_bitmap.isSet(@intCast(addr / BLOCK_SIZE, u32));
 }
 
 ///
@@ -74,7 +74,7 @@ pub fn alloc() ?usize {
 ///     PmmBitmap.BitmapError.OutOfBounds: The address given was out of bounds.
 ///
 pub fn free(addr: usize) (bitmap.BitmapError || PmmError)!void {
-    const idx = @intCast(u32, addr / BLOCK_SIZE);
+    const idx = @intCast(addr / BLOCK_SIZE, u32);
     if (try the_bitmap.isSet(idx)) {
         try the_bitmap.clearEntry(idx);
     } else {
@@ -228,7 +228,7 @@ fn runtimeTests(mem_profile: *const MemProfile, allocator: Allocator) void {
         }
         prev_alloc = alloced;
         for (mem_profile.physical_reserved) |entry| {
-            var addr = std.mem.alignBackward(@intCast(usize, entry.start), BLOCK_SIZE);
+            var addr = std.mem.alignBackward(@intCast(entry.start, usize), BLOCK_SIZE);
             if (addr == alloced) {
                 panic(null, "FAILURE: PMM allocated an address that should be reserved by the memory map: 0x{x}", .{addr});
             }

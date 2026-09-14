@@ -116,7 +116,7 @@ fn pageMove(dest: []u16, src: []u16, size: u16) TtyError!void {
     if (size == 0) return;
 
     // Make sure we don't override the values we want to copy
-    if (@ptrToInt(&dest[0]) < @ptrToInt(&src[0])) {
+    if (@intFromPtr(&dest[0]) < @intFromPtr(&src[0])) {
         var i: u16 = 0;
         while (i != size) : (i += 1) {
             dest[i] = src[i];
@@ -163,8 +163,8 @@ fn updateCursor() void {
 fn getCursor() void {
     const cursor = vga.getCursor();
 
-    row = @truncate(u8, cursor / vga.WIDTH);
-    column = @truncate(u8, cursor % vga.WIDTH);
+    row = @truncate(cursor / vga.WIDTH);
+    column = @truncate(cursor % vga.WIDTH);
 }
 
 ///
@@ -309,7 +309,7 @@ fn putChar(char: u8) TtyError!void {
         '\t' => {
             column += 4;
             if (column >= vga.WIDTH) {
-                column -= @truncate(u8, vga.WIDTH);
+                column -= @truncate(vga.WIDTH);
                 row += 1;
                 scroll();
             }
@@ -482,7 +482,7 @@ pub fn setColour(new_colour: u8) void {
 ///     The virtual address of the video buffer
 ///
 pub fn getVideoBufferAddress() usize {
-    return @ptrToInt(&KERNEL_ADDR_OFFSET) + 0xB8000;
+    return @intFromPtr(&KERNEL_ADDR_OFFSET) + 0xB8000;
 }
 
 ///
@@ -493,9 +493,9 @@ pub fn getVideoBufferAddress() usize {
 pub fn init() void {
     // Video buffer in higher half
     if (is_test) {
-        video_buffer = @intToPtr([*]volatile u16, mock_getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
+        video_buffer = @ptrFromInt([*]volatile u16, mock_getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
     } else {
-        video_buffer = @intToPtr([*]volatile u16, getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
+        video_buffer = @ptrFromInt([*]volatile u16, getVideoBufferAddress())[0..VIDEO_BUFFER_SIZE];
     }
 
     setColour(vga.entryColour(vga.COLOUR_LIGHT_GREY, vga.COLOUR_BLACK));
@@ -521,7 +521,7 @@ pub fn init() void {
 
         // Move 7 rows down
         i = 0;
-        if (@ptrToInt(&video_buffer[ROW_MIN * vga.WIDTH]) < @ptrToInt(&video_buffer[row_offset * vga.WIDTH])) {
+        if (@intFromPtr(&video_buffer[ROW_MIN * vga.WIDTH]) < @intFromPtr(&video_buffer[row_offset * vga.WIDTH])) {
             while (i != row * vga.WIDTH) : (i += 1) {
                 video_buffer[i + (ROW_MIN * vga.WIDTH)] = video_buffer[i + (row_offset * vga.WIDTH)];
             }
@@ -537,7 +537,7 @@ pub fn init() void {
         setVideoBuffer(blank, START_OF_DISPLAYABLE_REGION) catch |e| {
             log.err("Error clearing the top 7 rows. Error: {}\n", .{e});
         };
-        row += @truncate(u8, row_offset + ROW_MIN);
+        row += @truncate(row_offset + ROW_MIN);
     } else {
         // Clear the screen
         setVideoBuffer(blank, VIDEO_BUFFER_SIZE) catch |e| {
@@ -557,7 +557,7 @@ const test_colour: u8 = vga.orig_entryColour(vga.COLOUR_LIGHT_GREY, vga.COLOUR_B
 var test_video_buffer: [VIDEO_BUFFER_SIZE]u16 = [_]u16{0} ** VIDEO_BUFFER_SIZE;
 
 fn mock_getVideoBufferAddress() usize {
-    return @ptrToInt(&test_video_buffer);
+    return @intFromPtr(&test_video_buffer);
 }
 
 fn resetGlobals() void {
@@ -583,7 +583,7 @@ fn setUpVideoBuffer() !void {
     // Change to a stack location
     video_buffer = test_video_buffer[0..VIDEO_BUFFER_SIZE];
 
-    try expectEqual(@ptrToInt(video_buffer.ptr), @ptrToInt(&test_video_buffer[0]));
+    try expectEqual(@intFromPtr(video_buffer.ptr), @intFromPtr(&test_video_buffer[0]));
 
     colour = test_colour;
     blank = vga.orig_entry(0, test_colour);
@@ -600,8 +600,8 @@ fn setVideoBufferBlankPages() !void {
 
 fn setVideoBufferIncrementingBlankPages() !void {
     try setUpVideoBuffer();
-    for (video_buffer) |*b, i| {
-        b.* = @intCast(u16, i);
+    for (video_buffer, 0..) |*b, i| {
+        b.* = @intCast(i, u16);
     }
 
     setPagesBlank();
@@ -616,9 +616,9 @@ fn setPagesBlank() void {
 }
 
 fn setPagesIncrementing() void {
-    for (pages) |*p_i, i| {
-        for (p_i) |*p_j, j| {
-            p_j.* = @intCast(u16, i) * TOTAL_CHAR_ON_PAGE + @intCast(u16, j);
+    for (pages, 0..) |*p_i, i| {
+        for (p_i, 0..) |*p_j, j| {
+            p_j.* = @intCast(i, u16) * TOTAL_CHAR_ON_PAGE + @intCast(j, u16);
         }
     }
 }
@@ -632,8 +632,8 @@ fn defaultVariablesTesting(p_i: u8, r: u8, c: u8) !void {
 }
 
 fn incrementingPagesTesting() !void {
-    for (pages) |p_i, i| {
-        for (p_i) |p_j, j| {
+    for (pages, 0..) |p_i, i| {
+        for (p_i, 0..) |p_j, j| {
             try expectEqual(i * TOTAL_CHAR_ON_PAGE + j, p_j);
         }
     }
@@ -818,8 +818,8 @@ test "putEntryAt in displayable region page_index is 0" {
 
     // Post test
     try defaultVariablesTesting(0, 0, 0);
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (i == page_index and (j == (y * vga.WIDTH + x) - START_OF_DISPLAYABLE_REGION)) {
                 try expectEqual(vga.orig_entry(char, test_colour), c);
             } else {
@@ -858,7 +858,7 @@ test "putEntryAt in displayable region page_index is not 0" {
 
     // Fill the 1'nd page (index 1) will all 1's
     const ones = vga.orig_entry('1', test_colour);
-    for (pages) |*page, i| {
+    for (pages, 0..) |*page, i| {
         for (page) |*char| {
             if (i == 0) {
                 char.* = ones;
@@ -874,7 +874,7 @@ test "putEntryAt in displayable region page_index is not 0" {
     try defaultVariablesTesting(1, 0, 0);
     try defaultVideoBufferTesting();
 
-    for (pages) |page, i| {
+    for (pages, 0..) |page, i| {
         for (page) |char| {
             if (i == 0) {
                 try expectEqual(ones, char);
@@ -897,7 +897,7 @@ test "putEntryAt in displayable region page_index is not 0" {
     const text = "Page 0 of 4";
     const column_temp = column;
     const row_temp = row;
-    column = @truncate(u8, vga.WIDTH) - @truncate(u8, text.len);
+    column = @truncate(vga.WIDTH) - @truncate(text.len);
     row = ROW_MIN - 1;
     writeString(text) catch |e| {
         log.err("Unable to print page number, printing out of bounds. Error: {}\n", .{e});
@@ -905,8 +905,8 @@ test "putEntryAt in displayable region page_index is not 0" {
     column = column_temp;
     row = row_temp;
 
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (i == 0 and j == 0) {
                 try expectEqual(vga.orig_entry(char, test_colour), c);
             } else if (i == 0) {
@@ -1001,8 +1001,8 @@ test "pagesMoveRowsUp 1 rows" {
     try defaultVideoBufferTesting();
 
     const to_add = rows_to_move * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1040,8 +1040,8 @@ test "pagesMoveRowsUp ROW_TOTAL - 1 rows" {
     try defaultVideoBufferTesting();
 
     const to_add = rows_to_move * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1078,8 +1078,8 @@ test "pagesMoveRowsUp ROW_TOTAL rows" {
     try defaultVariablesTesting(0, 0, 0);
     try defaultVideoBufferTesting();
 
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (i == 0) {
                 // The last rows will be blanks
                 try expectEqual(blank, c);
@@ -1136,8 +1136,8 @@ test "scroll row is equal to height" {
     try defaultVariablesTesting(0, vga.HEIGHT - 1, 0);
 
     const to_add = (row_test - vga.HEIGHT + 1) * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1189,8 +1189,8 @@ test "scroll row is more than height" {
     try defaultVariablesTesting(0, vga.HEIGHT - 1, 0);
 
     const to_add = (row_test - vga.HEIGHT + 1) * vga.WIDTH;
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if (j >= TOTAL_CHAR_ON_PAGE - to_add) {
                 if (i == 0) {
                     // The last rows will be blanks
@@ -1477,8 +1477,8 @@ test "putChar any char end of screen" {
 
     // Post test
     try defaultVariablesTesting(0, vga.HEIGHT - 1, 0);
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if ((i == 0) and (j == TOTAL_CHAR_ON_PAGE - vga.WIDTH - 1)) {
                 try expectEqual(vga.orig_entry('A', colour), c);
             } else {
@@ -1555,7 +1555,7 @@ test "pageUp bottom page" {
     const text = "Page 1 of 4";
     const column_temp = column;
     const row_temp = row;
-    column = @truncate(u8, vga.WIDTH) - @truncate(u8, text.len);
+    column = @truncate(vga.WIDTH) - @truncate(text.len);
     row = ROW_MIN - 1;
     writeString(text) catch |e| {
         log.err("Unable to print page number, printing out of bounds. Error: {}\n", .{e});
@@ -1635,7 +1635,7 @@ test "pageDown top page" {
     const text = "Page 3 of 4";
     const column_temp = column;
     const row_temp = row;
-    column = @truncate(u8, vga.WIDTH) - @truncate(u8, text.len);
+    column = @truncate(vga.WIDTH) - @truncate(text.len);
     row = ROW_MIN - 1;
     writeString(text) catch |e| {
         log.err("Unable to print page number, printing out of bounds. Error: {}\n", .{e});
@@ -1692,8 +1692,8 @@ test "clearScreen" {
         }
     }
 
-    for (pages) |page, j| {
-        for (page) |c, k| {
+    for (pages, 0..) |page, j| {
+        for (page, 0..) |c, k| {
             if (j == 0) {
                 // The last rows will be blanks
                 try expectEqual(blank, c);
@@ -1895,8 +1895,8 @@ test "writeString" {
 
     // Post test
     try defaultVariablesTesting(0, ROW_MIN, 3);
-    for (pages) |page, i| {
-        for (page) |c, j| {
+    for (pages, 0..) |page, i| {
+        for (page, 0..) |c, j| {
             if ((i == 0) and (j == 0)) {
                 try expectEqual(vga.orig_entry('A', colour), c);
             } else if ((i == 0) and (j == 1)) {
@@ -2013,8 +2013,8 @@ test "init not 0,0" {
 /// Test the init function set up everything properly.
 ///
 fn rt_initialisedGlobals() void {
-    if (@ptrToInt(video_buffer.ptr) != @ptrToInt(&KERNEL_ADDR_OFFSET) + 0xB8000) {
-        panic(@errorReturnTrace(), "Video buffer not at correct virtual address, found: {}\n", .{@ptrToInt(video_buffer.ptr)});
+    if (@intFromPtr(video_buffer.ptr) != @intFromPtr(&KERNEL_ADDR_OFFSET) + 0xB8000) {
+        panic(@errorReturnTrace(), "Video buffer not at correct virtual address, found: {}\n", .{@intFromPtr(video_buffer.ptr)});
     }
 
     if (page_index != 0) {

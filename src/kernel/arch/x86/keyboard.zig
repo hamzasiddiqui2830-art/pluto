@@ -65,7 +65,7 @@ fn parseScanCode(scan_code: u8) ?KeyAction {
         }
     }
     // Cut off the top bit, which denotes that the key was released
-    const key_code = @truncate(u7, scan_code);
+    const key_code = @truncate(scan_code);
     var key_pos: ?KeyPosition = null;
     if (special_sequence or on_print_screen) {
         if (!released) {
@@ -167,7 +167,7 @@ fn onKeyEvent(ctx: *arch.CpuState) usize {
             log.warn("No room for keyboard action {}\n", .{action});
         }
     }
-    return @ptrToInt(ctx);
+    return @intFromPtr(ctx);
 }
 
 ///
@@ -337,7 +337,7 @@ test "parseScanCode" {
         KeyPosition.SPECIAL,
     };
     const simple_special_codes = &[_]u8{ 72, 75, 77, 80, 82, 71, 73, 83, 79, 81, 53, 28, 56, 91 };
-    for (simple_special_keys) |key, i| {
+    for (simple_special_keys, 0..) |key, i| {
         try testing.expectEqual(parseScanCode(128), null);
         try testing.expectEqual(pressed_keys, 0);
         try testing.expectEqual(on_print_screen, false);
