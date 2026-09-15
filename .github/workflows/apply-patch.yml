@@ -1,0 +1,36 @@
+name: Apply Patch
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Apply the patch file
+      - name: Apply Git Patch
+        run: |
+          git apply patches/update.patch
+
+      # Step 3: Commit and push changes back (Optional)
+      - name: Commit and push patched files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add .
+          # Check if there are changes before committing
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "Apply patches/update.patch"
+            git push
+          else
+            echo "No changes to commit."
+        
+fi
