@@ -164,7 +164,7 @@ pub fn build(b: *Builder) !void {
         try qemu_args_al.append("none");
     }
 
-    var qemu_args = qemu_args_al.toOwnedSlice();
+    const qemu_args = qemu_args_al.toOwnedSlice();
 
     const rt_step = RuntimeStep.create(b, test_mode, qemu_args);
     rt_step.step.dependOn(&make_iso.step);
@@ -225,7 +225,7 @@ const Fat32BuilderStep = struct {
     ///     Fat32.Error     - If there was an error creating the FAT image. This will be invalid options.
     ///
     fn make(step: *Step) (error{EndOfStream} || File.OpenError || File.ReadError || File.WriteError || File.SeekError || Fat32.Error)!void {
-        const self = @fieldParentPtr(Fat32BuilderStep, "step", step);
+        const self = @as(*Fat32BuilderStep, @alignCast(@fieldParentPtr(Fat32BuilderStep, "step", step)));
         // Open the out file
         const image = try std.fs.cwd().createFile(self.out_file_path, .{ .read = true });
 
@@ -341,7 +341,7 @@ const RamdiskStep = struct {
     ///     Errors for opening, reading and writing to and from files and for allocating memory.
     ///
     fn make(step: *Step) Error!void {
-        const self = @fieldParentPtr(RamdiskStep, "step", step);
+        const self = @alignCast(@fieldParentPtr(RamdiskStep, "step", step));
         switch (self.target.cpu_arch) {
             .x86 => try writeRamdisk(u32, self),
             else => unreachable,

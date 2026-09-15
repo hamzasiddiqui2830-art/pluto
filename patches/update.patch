@@ -1,0 +1,126 @@
+--------------------------6eb20d168ad582d6
+Content-Disposition: form-data; name="file"; filename="changes.patch"
+Content-Type: application/octet-stream
+
+diff --git a/.gitignore b/.gitignore
+index a4ab1ca..6510be5 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,5 @@
+ ```
+-zig-linux-x86_64-0.13.0/
++# Zig build artifacts and dependencies
++zig-x86_64-linux-*/**
++!zig-x86_64-linux-*/zig
+ ```
+\ No newline at end of file
+diff --git a/build.zig b/build.zig
+index 712a32f..e3cfcf8 100644
+--- a/build.zig
++++ b/build.zig
+@@ -4,7 +4,6 @@ const builtin = @import("builtin");
+ const rt = @import("test/runtime_test.zig");
+ const RuntimeStep = rt.RuntimeStep;
+ const Allocator = std.mem.Allocator;
+-const Builder = std.build.Builder;
+ const Step = std.build.Step;
+ const CompileStep = std.build.CompileStep;
+ const Target = std.Target;
+@@ -15,6 +14,8 @@ const TestMode = rt.TestMode;
+ const ArrayList = std.ArrayList;
+ const Fat32 = @import("mkfat32.zig").Fat32;
+ 
++const Builder = std.Build;
++
+ const x86_i686: std.Target.Query = .{
+     .cpu_arch = .x86,
+     .os_tag = .freestanding,
+@@ -164,7 +165,7 @@ pub fn build(b: *Builder) !void {
+         try qemu_args_al.append("none");
+     }
+ 
+-    var qemu_args = qemu_args_al.toOwnedSlice();
++    const qemu_args = qemu_args_al.toOwnedSlice();
+ 
+     const rt_step = RuntimeStep.create(b, test_mode, qemu_args);
+     rt_step.step.dependOn(&make_iso.step);
+@@ -225,7 +226,7 @@ const Fat32BuilderStep = struct {
+     ///     Fat32.Error     - If there was an error creating the FAT image. This will be invalid options.
+     ///
+     fn make(step: *Step) (error{EndOfStream} || File.OpenError || File.ReadError || File.WriteError || File.SeekError || Fat32.Error)!void {
+-        const self = @fieldParentPtr(Fat32BuilderStep, "step", step);
++        const self = @as(*Fat32BuilderStep, @alignCast(@fieldParentPtr("step", step)));
+         // Open the out file
+         const image = try std.fs.cwd().createFile(self.out_file_path, .{ .read = true });
+ 
+@@ -341,7 +342,7 @@ const RamdiskStep = struct {
+     ///     Errors for opening, reading and writing to and from files and for allocating memory.
+     ///
+     fn make(step: *Step) Error!void {
+-        const self = @fieldParentPtr(RamdiskStep, "step", step);
++        const self = @as(*RamdiskStep, @alignCast(@fieldParentPtr("step", step)));
+         switch (self.target.cpu_arch) {
+             .x86 => try writeRamdisk(u32, self),
+             else => unreachable,
+diff --git a/mkfat32.zig b/mkfat32.zig
+index 4340fab..b13c87a 100644
+--- a/mkfat32.zig
++++ b/mkfat32.zig
+@@ -311,13 +311,13 @@ pub const Fat32 = struct {
+ 
+         return switch (image_size) {
+             0...35 * 512 - 1 => Error.TooSmall,
+-            35 * 512...64 * MB - 1 => @intCast(u8, std.math.max(512, bytes_per_sector) / bytes_per_sector),
+-            64 * MB...128 * MB - 1 => @intCast(u8, std.math.max(1024, bytes_per_sector) / bytes_per_sector),
+-            128 * MB...256 * MB - 1 => @intCast(u8, std.math.max(2048, bytes_per_sector) / bytes_per_sector),
+-            256 * MB...8 * GB - 1 => @intCast(u8, std.math.max(4096, bytes_per_sector) / bytes_per_sector),
+-            8 * GB...16 * GB - 1 => @intCast(u8, std.math.max(8192, bytes_per_sector) / bytes_per_sector),
+-            16 * GB...32 * GB - 1 => @intCast(u8, std.math.max(16384, bytes_per_sector) / bytes_per_sector),
+-            32 * GB...2 * TB - 1 => @intCast(u8, std.math.max(32768, bytes_per_sector) / bytes_per_sector),
++            35 * 512...64 * MB - 1 => @intCast(std.math.max(512, bytes_per_sector) / bytes_per_sector),
++            64 * MB...128 * MB - 1 => @intCast(std.math.max(1024, bytes_per_sector) / bytes_per_sector),
++            128 * MB...256 * MB - 1 => @intCast(std.math.max(2048, bytes_per_sector) / bytes_per_sector),
++            256 * MB...8 * GB - 1 => @intCast(std.math.max(4096, bytes_per_sector) / bytes_per_sector),
++            8 * GB...16 * GB - 1 => @intCast(std.math.max(8192, bytes_per_sector) / bytes_per_sector),
++            16 * GB...32 * GB - 1 => @intCast(std.math.max(16384, bytes_per_sector) / bytes_per_sector),
++            32 * GB...2 * TB - 1 => @intCast(std.math.max(32768, bytes_per_sector) / bytes_per_sector),
+             else => Error.TooLarge,
+         };
+     }
+@@ -354,7 +354,7 @@ pub const Fat32 = struct {
+     fn createSerialNumber() u32 {
+         // TODO: Get the actual date. Currently there is no std lib for human readable date.
+         const year = 2020;
+-        const month = 09;
++        const month = 9;
+         const day = 27;
+         const hour = 13;
+         const minute = 46;
+@@ -541,14 +541,14 @@ pub const Fat32 = struct {
+         }
+ 
+         // See: https://board.flatassembler.net/topic.php?t=12680
+-        var sectors_per_fat = @intCast(u32, (image_size - getReservedSectors() + (2 * options.cluster_size)) / ((options.cluster_size * (options.sector_size / 4)) + 2));
++        var sectors_per_fat: u32 = @intCast((image_size - getReservedSectors() + (2 * options.cluster_size)) / ((options.cluster_size * (options.sector_size / 4)) + 2));
+         // round up sectors
+         sectors_per_fat = (sectors_per_fat + options.sector_size - 1) / options.sector_size;
+ 
+         return Header{
+             .bytes_per_sector = options.sector_size,
+             .sectors_per_cluster = options.cluster_size,
+-            .total_sectors = @intCast(u32, @divExact(image_size, options.sector_size)),
++            .total_sectors = @as(u32, @intCast(@divExact(image_size, options.sector_size))),
+             .sectors_per_fat = sectors_per_fat,
+             .serial_number = createSerialNumber(),
+             .volume_label = options.volume_name,
+@@ -568,7 +568,7 @@ pub const Fat32 = struct {
+     ///
+     fn clearStream(stream: anytype, size: usize) ErrorSet(@TypeOf(stream))!void {
+         const buff_size = 4096;
+-        const bytes: [buff_size]u8 = [_]u8{0x00} ** buff_size;
++        const bytes: [buff_size]u8 = [_]u8{0x00}**(buff_size);
+ 
+         var remaining: usize = size;
+         while (remaining > 0) {
+
+--------------------------6eb20d168ad582d6--

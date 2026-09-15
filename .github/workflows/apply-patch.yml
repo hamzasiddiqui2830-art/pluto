@@ -1,0 +1,41 @@
+name: Apply Patch
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply Git Patch safely
+        run: |
+          # 1. Check if the patch can be applied cleanly
+          if git apply --check patches/update.patch > /dev/null 2>&1; then
+            echo "Patch applies cleanly. Applying..."
+            git apply patches/update.patch
+          # 2. Check if the patch is already applied (reverse check)
+          elif git apply --reverse --check patches/update.patch > /dev/null 2>&1; then
+            echo "Patch has already been applied. Skipping."
+          else
+            echo "Patch fails to apply due to conflicts or missing baseline code."
+            exit 1
+          fi
+
+      - name: Commit and push patched files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add .
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "Apply patches/update.patch"
+            git push
+          else
+            echo "No changes to commit."
+          fi
