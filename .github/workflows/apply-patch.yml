@@ -3,30 +3,36 @@ name: Apply Patch
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   patch:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Apply the patch file
-      - name: Apply Git Patch
+      - name: Apply Git Patch safely
         run: |
-          git apply patches/update.patch
+          # 1. Check if the patch can be applied cleanly
+          if git apply --check patches/update.patch > /dev/null 2>&1; then
+            echo "Patch applies cleanly. Applying..."
+            git apply patches/update.patch
+          # 2. Check if the patch is already applied (reverse check)
+          elif git apply --reverse --check patches/update.patch > /dev/null 2>&1; then
+            echo "Patch has already been applied. Skipping."
+          else
+            echo "Patch fails to apply due to conflicts or missing baseline code."
+            exit 1
+          fi
 
-      # Step 3: Commit and push changes back (Optional)
       - name: Commit and push patched files
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
           git add .
-          # Check if there are changes before committing
           if ! git diff-index --quiet HEAD; then
             git commit -m "Apply patches/update.patch"
             git push
